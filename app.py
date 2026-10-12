@@ -72,19 +72,25 @@ selected_pemda = st.sidebar.selectbox(
     "Pilih Nama Pemda / Kabupaten / Kota", options=pemda_list
 )
 
-# Filter Data Berdasarkan Pilihan User
+# Filter Data Berdasarkan Pilihan User & Hanya Ambil Komponen PAD (Kode 41)
 df_filtered = df[
     (df[kolom_provinsi] == selected_provinsi)
     & (df[kolom_pemda] == selected_pemda)
 ]
 
-# --- KONTEN UTAMA ---
-st.markdown(f"### 📍 Menampilkan Data untuk: **{selected_pemda}**")
+if "standarjenismap" in df_filtered.columns:
+  # Menyaring agar hanya mencakup standarjenismap yang diawali dengan kode '41' (PAD)
+  df_filtered = df_filtered[
+      df_filtered["standarjenismap"].astype(str).str.startswith("41")
+  ]
 
-# --- TABEL AGREGAT HIERARKI (OBJEK LV1 & LV2) ---
+# --- KONTEN UTAMA ---
+st.markdown(f"### 📍 Menampilkan Data PAD untuk: **{selected_pemda}**")
+
+# --- TABEL AGREGAT HIERARKI (OBJEK LV1 & LV2 - KHUSUS PAD) ---
 st.markdown(
-    "#### 📋 Tabel Agregat Jenis Pdrd (Hierarki Objek Lv1 & Lv2 dalam Miliar"
-    " Rupiah)"
+    "#### 📋 Tabel Agregat Pendapatan Asli Daerah (PAD) - Hierarki Objek Lv1 &"
+    " Lv2 (dalam Miliar Rupiah)"
 )
 try:
   if (
@@ -115,25 +121,19 @@ try:
     hierarchical_rows = []
 
     for lv1 in sorted(grouped.index.get_level_values(0).unique()):
-      # Baris Total / Agregat Objek_Lv1 (Tampil Normal / Bold secara visual)
+      # Baris Total / Agregat Objek_Lv1 (Bold)
       lv1_data = grouped.loc[lv1].sum()
-      lv1_row = {"Jenis / Objek PDRD": f"**{lv1}**"}
+      lv1_row = {"Jenis / Objek PDRD (PAD)": f"**{lv1}**"}
       for thn in tahun_cols:
         lv1_row[thn] = lv1_data[thn]
       hierarchical_rows.append(lv1_row)
 
-      # Baris Rincian Objek_Lv2 (Menjorok ke dalam menggunakan spasi khusus & berhuruf miring)
+      # Baris Rincian Objek_Lv2 (Menjorok & Italic)
       lv2_sub = grouped.loc[lv1]
-      if isinstance(lv2_sub.index, pd.MultiIndex) or len(lv2_sub.shape) > 1:
-        lv2_items = lv2_sub.index.unique()
-      else:
-        lv2_items = [lv2_sub.name] if hasattr(lv2_sub, "name") else lv2_sub.index
-
       for lv2 in lv2_sub.index:
         lv2_data = lv2_sub.loc[lv2]
-        # Menggunakan karakter spasi tak terputus Unicode (\u00A0) untuk efek menjorok
         indent_name = f"\u00A0\u00A0\u00A0\u00A0*{lv2}*"
-        lv2_row = {"Jenis / Objek PDRD": indent_name}
+        lv2_row = {"Jenis / Objek PDRD (PAD)": indent_name}
         for thn in tahun_cols:
           lv2_row[thn] = lv2_data[thn]
         hierarchical_rows.append(lv2_row)
@@ -143,7 +143,7 @@ try:
     if not df_hierarki.empty:
       st.dataframe(df_hierarki, use_container_width=True, hide_index=True)
     else:
-      st.warning("Tidak ada data untuk kombinasi wilayah tersebut.")
+      st.warning("Tidak ada data PAD untuk kombinasi wilayah tersebut.")
   else:
     st.error(
         "Kolom 'Objek_Lv1', 'Objek_Lv2', atau 'Tahun' tidak ditemukan di"
@@ -160,16 +160,11 @@ st.markdown("---")
 col1, col2 = st.columns(2)
 
 with col1:
-  st.subheader("📊 Kontribusi Pajak Utama")
+  st.subheader("📊 Top 5 Objek Pajak/Retribusi PAD")
   try:
-    df_pajak = df_filtered[
-        df_filtered["standarkelompokmap"].str.contains(
-            "Pajak|PAD", case=False, na=False
-        )
-    ]
-    if not df_pajak.empty:
+    if not df_filtered.empty:
       pajak_summary = (
-          df_pajak.groupby("standarobjekmap")["sum"].sum().reset_index()
+          df_filtered.groupby("standarobjekmap")["sum"].sum().reset_index()
       )
       pajak_summary = pajak_summary.sort_values(by="sum", ascending=False).head(
           5
@@ -183,26 +178,21 @@ with col1:
           palette="Blues_r",
           ax=ax,
       )
-      ax.set_title(f"Top 5 Objek di {selected_pemda}")
+      ax.set_title(f"Top 5 Komponen PAD di {selected_pemda}")
       ax.set_xlabel("Objek Map")
       ax.set_ylabel("Nilai (Rp)")
       plt.xticks(rotation=30, ha="right")
       st.pyplot(fig)
     else:
-      st.info("Data pajak tidak tersedia.")
+      st.info("Data PAD tidak tersedia.")
   except Exception:
-    st.info("Grafik kontribusi pajak belum dapat dirender.")
+    st.info("Grafik komponen PAD belum dapat dirender.")
 
 with col2:
-  st.subheader("📈 Tren PAD per Tahun")
+  st.subheader("📈 Tren Total PAD per Tahun")
   try:
-    df_pad = df_filtered[
-        df_filtered["standarkelompokmap"].str.contains(
-            "PAD|PENDAPATAN ASLI", case=False, na=False
-        )
-    ]
-    if not df_pad.empty:
-      pad_trend = df_pad.groupby("Tahun")["sum"].sum().reset_index()
+    if not df_filtered.empty:
+      pad_trend = df_filtered.groupby("Tahun")["sum"].sum().reset_index()
       pad_trend["sum_triliun"] = pad_trend["sum"] / 1e12
 
       fig, ax = plt.subplots(figsize=(8, 4))
@@ -225,4 +215,6 @@ with col2:
     st.info("Grafik tren PAD belum dapat dirender.")
 
 st.markdown("---")
-st.caption("💡 Dashboard PDRD Data Hub - Hierarki Objek Lv1 & Lv2.")
+st.caption(
+    "💡 Dashboard PDRD Data Hub - Filter Khusus Pendapatan Asli Daerah (PAD)."
+)
