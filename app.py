@@ -17,7 +17,7 @@ st.markdown("PDRD Data Insight Window - Agregat Provinsi & Pemda.")
 @st.cache_data
 def load_data():
   zip_path = "Dataset PAD 2021-2025.zip"  # Nama file ZIP di GitHub
-  csv_filename = "Dataset PAD 2021-2025.csv"  # Nama file CSV di dalam ZIP
+  csv_filename = "Dataset 2021-2025.csv"  # Nama file CSV di dalam ZIP
 
   with zipfile.ZipFile(zip_path, "r") as z:
     with z.open(csv_filename) as f:
@@ -89,26 +89,34 @@ df_filtered = df[
 # --- KONTEN UTAMA ---
 st.markdown(f"### 📍 Menampilkan Data untuk: **{selected_pemda}**")
 
-# --- TABEL AGREGAT BERBASIS Objek_Lv1 (Tahun 2021 - 2026) ---
+# --- TABEL AGREGAT BERBASIS standarkelompokmap / standarjenismap (Tahun 2021 - 2026) ---
 st.markdown("#### 📋 Tabel Agregat Jenis PDRD (dalam Miliar Rupiah)")
 try:
-  if "Objek_Lv1" in df_filtered.columns and "Tahun" in df_filtered.columns:
-    # Membuat Pivot Table dengan kolom Tahun tersusun ke samping
+  # Tentukan kolom pengelompokan yang tersedia
+  group_col = (
+      "standarobjekmap"
+      if "standarobjekmap" in df_filtered.columns
+      else "Objek_Lv2"
+  )
+
+  if group_col in df_filtered.columns and "Tahun" in df_filtered.columns:
+    # Menggunakan groupby + unstack agar lebih aman dari konflik indeks duplikat
     pivot_summary = (
-        df_filtered.pivot_table(
-            index="Objek_Lv1", columns="Tahun", values="sum", aggfunc="sum"
-        )
-        .fillna(0)
+        df_filtered.groupby([group_col, "Tahun"])["sum"].sum().unstack(fill_value=0)
         / 1e9
     )  # Dikonversi ke Miliar Rupiah
 
-    st.dataframe(pivot_summary.style.format("{,.2f}"), use_container_width=True)
+    if not pivot_summary.empty:
+      st.dataframe(
+          pivot_summary.style.format("{,.2f}"), use_container_width=True
+      )
+    else:
+      st.warning("Tidak ada data untuk filter pemda tersebut.")
   else:
-    st.error("Kolom 'Objek_Lv1' atau 'Tahun' tidak ditemukan di dataset.")
+    st.error("Kolom pengelompokan atau 'Tahun' tidak ditemukan.")
+    st.dataframe(df_filtered.head())
 except Exception as err:
-  st.warning(
-      f"Gagal membentuk tabel agregat: {err}. Menampilkan data mentah:"
-  )
+  st.warning(f"Gagal membentuk tabel agregat. Menampilkan data mentah:")
   st.dataframe(df_filtered.head())
 
 # --- BAGIAN VISUALISASI GRAFIK ---
@@ -119,12 +127,14 @@ with col1:
   st.subheader("📊 Kontribusi Pajak Utama")
   try:
     df_pajak = df_filtered[
-        df_filtered["standarjenismap"].str.contains(
-            "Pajak", case=False, na=False
+        df_filtered["standarkelompokmap"].str.contains(
+            "Pajak|PAD", case=False, na=False
         )
     ]
     if not df_pajak.empty:
-      pajak_summary = df_pajak.groupby("Objek_Lv1")["sum"].sum().reset_index()
+      pajak_summary = (
+          df_pajak.groupby("standarobjekmap")["sum"].sum().reset_index()
+      )
       pajak_summary = pajak_summary.sort_values(by="sum", ascending=False).head(
           5
       )
@@ -132,13 +142,13 @@ with col1:
       fig, ax = plt.subplots(figsize=(8, 4))
       sns.barplot(
           data=pajak_summary,
-          x="Objek_Lv1",
+          x="standarobjekmap",
           y="sum",
           palette="Blues_r",
           ax=ax,
       )
-      ax.set_title(f"Top 5 Kontributor Objek Pajak di {selected_pemda}")
-      ax.set_xlabel("Objek Pajak (Lv1)")
+      ax.set_title(f"Top 5 Objek di {selected_pemda}")
+      ax.set_xlabel("Objek Map")
       ax.set_ylabel("Nilai (Rp)")
       plt.xticks(rotation=30, ha="right")
       st.pyplot(fig)
@@ -181,4 +191,4 @@ with col2:
     st.info("Grafik tren PAD belum dapat dirender.")
 
 st.markdown("---")
-st.caption("💡 Dashboard PDRD Data Hub - Berbasis Objek Level 1.")
+st.caption("💡 Dashboard PDRD Data Hub - Berbasis Dataset Utama & Arsip ZIP.")
