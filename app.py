@@ -15,7 +15,7 @@ st.markdown("PDRD Data Insight Window - Agregat Provinsi & Pemda.")
 # Fungsi untuk memuat data CSV
 @st.cache_data
 def load_data():
-  file_path = "Dataset PAD 2021-2025.csv"  # Sesuaikan dengan nama file CSV di GitHub
+  file_path = "Dataset PAD 2021-2025.csv"  # Pastikan nama file CSV sesuai di GitHub
   try:
     df = pd.read_csv(file_path, sep=";", on_bad_lines="skip")
   except Exception:
@@ -78,32 +78,34 @@ st.markdown(f"### 📍 Menampilkan Data untuk: **{selected_pemda}**")
 # --- TABEL AGREGAT BERBASIS Objek_Lv1 ---
 st.markdown("#### 📋 Tabel Agregat Jenis PDRD (dalam Miliar Rupiah)")
 try:
-  # Pastikan kolom Objek_Lv1 dan Tahun tersedia
   if "Objek_Lv1" in df_filtered.columns and "Tahun" in df_filtered.columns:
-    pivot_summary = (
-        df_filtered.pivot_table(
-            index="Objek_Lv1", columns="Tahun", values="sum", aggfunc="sum"
-        )
-        .fillna(0)
-        / 1e9
-    )  # Dikonversi ke Miliar Rupiah
-
-    if not pivot_summary.empty:
+    # Cek jumlah unique tahun. Jika hanya 1 tahun, gunakan groupby agar tidak error pivot
+    if df_filtered["Tahun"].nunique() > 1:
+      pivot_summary = (
+          df_filtered.pivot_table(
+              index="Objek_Lv1", columns="Tahun", values="sum", aggfunc="sum"
+          )
+          .fillna(0)
+          / 1e9
+      )
       st.dataframe(
           pivot_summary.style.format("{,.2f}"), use_container_width=True
       )
     else:
-      st.warning("Tidak ada data untuk kombinasi pemda dan tahun tersebut.")
+      # Jika hanya ada 1 tahun, tampilkan sebagai ringkasan kolom tunggal
+      pivot_summary = (
+          df_filtered.groupby("Objek_Lv1")["sum"].sum().reset_index()
+      )
+      pivot_summary["Nilai (Miliar Rp)"] = pivot_summary["sum"] / 1e9
+      pivot_summary = pivot_summary[["Objek_Lv1", "Nilai (Miliar Rp)"]]
+      st.dataframe(
+          pivot_summary.style.format({"Nilai (Miliar Rp)": "{:,.2f}"}),
+          use_container_width=True,
+      )
   else:
-    st.error(
-        "Kolom 'Objek_Lv1' atau 'Tahun' tidak ditemukan di dalam dataset CSV"
-        " Anda."
-    )
-    st.dataframe(df_filtered.head())
+    st.error("Kolom 'Objek_Lv1' atau 'Tahun' tidak ditemukan di dataset.")
 except Exception as err:
-  st.warning(
-      f"Gagal membentuk tabel agregat: {err}. Menampilkan data mentah:"
-  )
+  st.warning(f"Gagal membentuk tabel agregat: {err}")
   st.dataframe(df_filtered.head())
 
 # --- BAGIAN VISUALISASI GRAFIK ---
@@ -143,14 +145,14 @@ with col1:
     st.info("Grafik kontribusi pajak belum dapat dirender.")
 
 with col2:
-  st.subheader("📈 Tren PAD per Tahun (Triliun Rp)")
+  st.subheader("📈 Tren PAD per Tahun")
   try:
     df_pad = df_filtered[
         df_filtered["standarkelompokmap"].str.contains(
             "PAD|PENDAPATAN ASLI", case=False, na=False
         )
     ]
-    if not df_pad.empty:
+    if not df_pad.empty and df_pad["Tahun"].nunique() > 1:
       pad_trend = (
           df_pad.groupby("Tahun")["sum"].sum().reset_index()
       )
@@ -171,7 +173,9 @@ with col2:
       ax.set_ylabel("Total PAD (Triliun Rp)")
       st.pyplot(fig)
     else:
-      st.info("Data tren PAD tidak tersedia.")
+      st.info(
+          "Tren PAD memerlukan data lebih dari satu tahun di file CSV Anda."
+      )
   except Exception:
     st.info("Grafik tren PAD belum dapat dirender.")
 
