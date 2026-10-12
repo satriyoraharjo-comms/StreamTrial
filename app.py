@@ -86,10 +86,10 @@ if "standarjenismap" in df_filtered.columns:
 # --- KONTEN UTAMA ---
 st.markdown(f"### 📍 Menampilkan Data PAD untuk: **{selected_pemda}**")
 
-# --- TABEL AGREGAT HIERARKI (OBJEK LV1 & LV2 DENGAN STYLING ITALIC) ---
+# --- TABEL AGREGAT HIERARKI DENGAN URUTAN KHUSUS ---
 st.markdown(
-    "#### 📋 Tabel Agregat Pendapatan Asli Daerah (PAD) - Hierarki Objek Lv1 &"
-    " Lv2 (dalam Miliar Rupiah)"
+    "#### 📋 Tabel Agregat Pendapatan Asli Daerah (PAD) - Hierarki Khusus"
+    " (dalam Miliar Rupiah)"
 )
 try:
   if (
@@ -116,14 +116,24 @@ try:
     ]
     grouped = grouped[tahun_cols]
 
-    # 2. Menyusun baris hirarki dan melacak indeks baris Level 2 untuk styling
+    # 2. Urutan prioritas Objek_Lv1 yang diinginkan
+    desired_order = ["Pajak Daerah", "Retribusi Daerah", "HPKPD", "LLPAD"]
+
+    # Ambil daftar Objek_Lv1 yang benar-benar ada di data saat ini
+    available_lv1 = [
+        lv1 for lv1 in desired_order if lv1 in grouped.index.get_level_values(0)
+    ]
+    # Tambahkan elemen lain jika ada di luar daftar prioritas di atas
+    for lv1 in grouped.index.get_level_values(0).unique():
+      if lv1 not in available_lv1:
+        available_lv1.append(lv1)
+
+    # 3. Menyusun baris hirarki sesuai urutan & aturan tampilan Lv2
     hierarchical_rows = []
-    italic_rows_indices = (
-        []
-    )  # Menyimpan nomor baris yang merupakan Level 2 (untuk efek italic)
+    italic_rows_indices = []
     current_idx = 0
 
-    for lv1 in sorted(grouped.index.get_level_values(0).unique()):
+    for lv1 in available_lv1:
       # Baris Total / Agregat Objek_Lv1 (Bold)
       lv1_data = grouped.loc[lv1].sum()
       lv1_row = {"Jenis / Objek PDRD (PAD)": f"**{lv1}**"}
@@ -132,25 +142,27 @@ try:
       hierarchical_rows.append(lv1_row)
       current_idx += 1
 
-      # Baris Rincian Objek_Lv2 (Menjorok masuk)
+      # Jika Lv1 adalah HPKPD atau LLPAD, jangan tampilkan rincian Objek_Lv2-nya
+      if lv1 in ["HPKPD", "LLPAD"]:
+        continue
+
+      # Baris Rincian Objek_Lv2 untuk Pajak Daerah & Retribusi Daerah (Menjorok & Italic)
       lv2_sub = grouped.loc[lv1]
       for lv2 in lv2_sub.index:
         lv2_data = lv2_sub.loc[lv2]
-        # Menggunakan spasi tak terputus Unicode (\u00A0) untuk indentasi
         indent_name = f"\u00A0\u00A0\u00A0\u00A0{lv2}"
         lv2_row = {"Jenis / Objek PDRD (PAD)": indent_name}
         for thn in tahun_cols:
           lv2_row[thn] = lv2_data[thn]
         hierarchical_rows.append(lv2_row)
 
-        # Catat indeks baris ini sebagai baris Level 2 yang akan dimiringkan
         italic_rows_indices.append(current_idx)
         current_idx += 1
 
     df_hierarki = pd.DataFrame(hierarchical_rows)
 
 
-    # Fungsi styling CSS untuk membuat baris tertentu menjadi italic dan format angka
+    # Fungsi styling CSS untuk baris Level 2
     def style_hierarchy(row):
       is_italic = row.name in italic_rows_indices
       styles = []
@@ -165,7 +177,6 @@ try:
 
 
     if not df_hierarki.empty:
-      # Menerapkan Pandas Styler untuk merender teks miring pada baris Level 2
       formatted_df = df_hierarki.style.apply(style_hierarchy, axis=1).format(
           {thn: "{:,.2f}" for thn in tahun_cols}
       )
@@ -244,5 +255,5 @@ with col2:
 
 st.markdown("---")
 st.caption(
-    "💡 Dashboard PDRD Data Hub - Hierarki PAD dengan Styling Italic Level 2."
+    "💡 Dashboard PDRD Data Hub - Urutan Kustom & Penyembunyian Lv2 HPKPD/LLPAD."
 )
