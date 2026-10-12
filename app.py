@@ -79,7 +79,6 @@ df_filtered = df[
 ]
 
 if "standarjenismap" in df_filtered.columns:
-  # Menyaring agar hanya mencakup standarjenismap yang diawali dengan kode '41' (PAD)
   df_filtered = df_filtered[
       df_filtered["standarjenismap"].astype(str).str.startswith("41")
   ]
@@ -87,7 +86,7 @@ if "standarjenismap" in df_filtered.columns:
 # --- KONTEN UTAMA ---
 st.markdown(f"### 📍 Menampilkan Data PAD untuk: **{selected_pemda}**")
 
-# --- TABEL AGREGAT HIERARKI (OBJEK LV1 & LV2 - KHUSUS PAD) ---
+# --- TABEL AGREGAT HIERARKI (OBJEK LV1 & LV2 DENGAN STYLING ITALIC) ---
 st.markdown(
     "#### 📋 Tabel Agregat Pendapatan Asli Daerah (PAD) - Hierarki Objek Lv1 &"
     " Lv2 (dalam Miliar Rupiah)"
@@ -117,7 +116,7 @@ try:
     ]
     grouped = grouped[tahun_cols]
 
-    # 2. Menyusun baris hirarki: Total Lv1 di atas, diikuti sub-baris Lv2 yang menjorok dan italic
+    # 2. Menyusun baris hirarki dan melacak indeks baris Level 2 untuk styling
     hierarchical_rows = []
     italic_rows_indices = (
         []
@@ -133,7 +132,7 @@ try:
       hierarchical_rows.append(lv1_row)
       current_idx += 1
 
-      # Baris Rincian Objek_Lv2 (Menjorok & Italic)
+      # Baris Rincian Objek_Lv2 (Menjorok masuk)
       lv2_sub = grouped.loc[lv1]
       for lv2 in lv2_sub.index:
         lv2_data = lv2_sub.loc[lv2]
@@ -143,12 +142,13 @@ try:
         for thn in tahun_cols:
           lv2_row[thn] = lv2_data[thn]
         hierarchical_rows.append(lv2_row)
-        
+
         # Catat indeks baris ini sebagai baris Level 2 yang akan dimiringkan
         italic_rows_indices.append(current_idx)
         current_idx += 1
 
     df_hierarki = pd.DataFrame(hierarchical_rows)
+
 
     # Fungsi styling CSS untuk membuat baris tertentu menjadi italic dan format angka
     def style_hierarchy(row):
@@ -163,7 +163,8 @@ try:
           styles.append("")
       return styles
 
-    f not df_hierarki.empty:
+
+    if not df_hierarki.empty:
       # Menerapkan Pandas Styler untuk merender teks miring pada baris Level 2
       formatted_df = df_hierarki.style.apply(style_hierarchy, axis=1).format(
           {thn: "{:,.2f}" for thn in tahun_cols}
@@ -243,5 +244,5 @@ with col2:
 
 st.markdown("---")
 st.caption(
-    "💡 Dashboard PDRD Data Hub - Filter Khusus Pendapatan Asli Daerah (PAD)."
+    "💡 Dashboard PDRD Data Hub - Hierarki PAD dengan Styling Italic Level 2."
 )
