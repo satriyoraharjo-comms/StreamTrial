@@ -15,13 +15,14 @@ st.markdown("PDRD Data Insight Window - Agregat Provinsi & Pemda.")
 # Fungsi untuk memuat data langsung dari file Excel
 @st.cache_data
 def load_data():
+  # Sesuaikan nama file Excel Anda di GitHub jika berbeda (misal: Dataset.xlsx)
   file_path = "Dataset PAD 2021-2025.xlsx"
   df = pd.read_excel(file_path, sheet_name="Dataset PAD 2021-2025")
 
   # Membersihkan spasi ekstra pada nama kolom
   df.columns = df.columns.str.strip()
 
-  # Membersihkan dan mengonversi kolom numerik 'sum'
+  # Membersihkan dan mengonversi kolom numerik 'sum' secara aman
   if "sum" in df.columns:
     df["sum"] = pd.to_numeric(
         df["sum"].astype(str).str.replace(",", ".").str.strip(), errors="coerce"
@@ -40,8 +41,8 @@ try:
   df = load_data()
 except Exception as e:
   st.error(
-      "Gagal memuat file Excel. Pastikan file 'Dataset PAD 2021-2025.xlsx'"
-      f" sudah di-upload ke GitHub.\nError: {e}"
+      "Gagal memuat file Excel. Pastikan file Excel sudah di-upload ke"
+      f" GitHub.\nError: {e}"
   )
   st.stop()
 
@@ -81,48 +82,50 @@ df_filtered = df[
 # --- KONTEN UTAMA ---
 st.markdown(f"### 📍 Menampilkan Data untuk: **{selected_pemda}**")
 
-# --- TABEL AGREGAT REPLIKASI MANUAL (ANTI-GAGAL) ---
+# --- TABEL AGREGAT AMAN & TERSTRUKTUR ---
 st.markdown("#### 📋 Tabel Agregat Jenis PDRD (dalam Miliar Rupiah)")
 try:
-  # Pastikan kolom tahun yang tersedia (misal: 2021 sampai 2026)
-  tahun_list = sorted(df_filtered["Tahun"].unique())
-
-  # 1. Membuat pivot dasar antara Objek/Jenis dengan Tahun
-  group_key = (
+  # Tentukan kolom kategori baris yang tersedia
+  group_col = (
       "Objek_Lv1"
       if "Objek_Lv1" in df_filtered.columns
       else "standarjenismap"
   )
-  pivot_base = (
-      df_filtered.pivot_table(
-          index=group_key, columns="Tahun", values="sum", aggfunc="sum"
+
+  if group_col in df_filtered.columns and "Tahun" in df_filtered.columns:
+    # Menggunakan groupby + unstack yang sangat stabil terhadap duplikasi indeks
+    pivot_summary = (
+        df_filtered.groupby([group_col, "Tahun"])["sum"].sum().unstack(fill_value=0)
+        / 1e9
+    )  # Dikonversi ke Miliar Rupiah
+
+    # Pastikan kolom tahun 2021 s.d 2026 selalu tampil lengkap
+    for thn in [2021, 2022, 2023, 2024, 2025, 2026]:
+      if thn not in pivot_summary.columns:
+        pivot_summary[thn] = 0.0
+
+    # Urutkan kolom secara kronologis
+    pivot_summary = pivot_summary[
+        [
+            c
+            for c in [2021, 2022, 2023, 2024, 2025, 2026]
+            if c in pivot_summary.columns
+        ]
+    ]
+
+    if not pivot_summary.empty:
+      st.dataframe(
+          pivot_summary.style.format("{,.2f}"), use_container_width=True
       )
-      .fillna(0)
-      / 1e9
-  )  # Dikonversi ke Miliar Rupiah
-
-  # Pastikan seluruh rentang tahun (2021-2026) ada sebagai kolom walaupun nilainya 0
-  for thn in [2021, 2022, 2023, 2024, 2025, 2026]:
-    if thn not in pivot_base.columns:
-      pivot_base[thn] = 0.0
-
-  # Urutkan kolom tahun secara kronologis
-  pivot_base = pivot_base[
-      [c for c in [2021, 2022, 2023, 2024, 2025, 2026] if c in pivot_base.columns]
-  ]
-
-  if not pivot_base.empty:
-    st.dataframe(
-        pivot_base.style.format("{,.2f}"), use_container_width=True
-    )
+    else:
+      st.warning("Tidak ada data untuk kombinasi wilayah tersebut.")
   else:
-    st.warning("Tidak ada data untuk kombinasi wilayah tersebut.")
+    st.error("Kolom kategori atau 'Tahun' tidak ditemukan.")
+    st.dataframe(df_filtered.head())
 
 except Exception as err:
-  st.warning(
-      f"Gagal membentuk tabel agregat terstruktur: {err}. Menampilkan data"
-      " mentah:"
-  )
+  # Menampilkan pesan error asli yang deskriptif jika terjadi kendala lain
+  st.warning(f"Gagal membentuk tabel agregat: {str(err)}")
   st.dataframe(df_filtered.head())
 
 # --- BAGIAN VISUALISASI GRAFIK ---
@@ -173,7 +176,7 @@ with col2:
     ]
     if not df_pad.empty:
       pad_trend = (
-          df_pad.groupby("Tahun")["sum"].sum().reset_index()
+          pad_trend = df_pad.groupby("Tahun")["sum"].sum().reset_index()
       )
       pad_trend["sum_triliun"] = pad_trend["sum"] / 1e12
 
@@ -194,7 +197,7 @@ with col2:
     else:
       st.info("Data tren PAD tidak tersedia.")
   except Exception:
-      st.info("Grafik tren PAD belum dapat dirender.")
+    st.info("Grafik tren PAD belum dapat dirender.")
 
 st.markdown("---")
-st.caption("💡 Dashboard PDRD Data Hub - Replikasi Tabel Terstruktur.")
+st.caption("💡 Dashboard PDRD Data Hub - Agregat Terstruktur.")
