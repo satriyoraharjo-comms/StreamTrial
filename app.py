@@ -203,7 +203,7 @@ with col1:
   try:
     if not df_filtered.empty:
       pajak_summary = (
-          df_filtered.groupby("standarobjekmap")["sum"].sum().reset_index()
+          df_filtered.groupby("Objek_Lv2")["sum"].sum().reset_index()
       )
       pajak_summary = pajak_summary.sort_values(by="sum", ascending=False).head(
           5
@@ -212,13 +212,13 @@ with col1:
       fig, ax = plt.subplots(figsize=(8, 4))
       sns.barplot(
           data=pajak_summary,
-          x="standarobjekmap",
+          x="Objek_Lv2",
           y="sum",
           palette="Blues_r",
           ax=ax,
       )
       ax.set_title(f"Top 5 Komponen PAD di {selected_pemda}")
-      ax.set_xlabel("Objek Map")
+      ax.set_xlabel("Jenis Pajak Daerah")
       ax.set_ylabel("Nilai (Rp)")
       plt.xticks(rotation=30, ha="right")
       st.pyplot(fig)
