@@ -13,13 +13,12 @@ st.title("📊 PDRD Data Hub")
 st.markdown("PDRD Data Insight Window - Agregat Provinsi & Pemda.")
 
 
-# Fungsi untuk memuat data dari file ZIP di GitHub
+# Fungsi untuk memuat data ZIP / CSV dengan aman
 @st.cache_data
 def load_data():
-  zip_path = "Dataset PAD 2021-2025.zip"  # Ganti dengan nama file zip Anda di GitHub
-  csv_filename = "Dataset PAD 2021-2025.csv"  # Nama file CSV yang ada di dalam zip
+  zip_path = "Dataset PAD 2021-2025.zip"  # Nama file ZIP di GitHub
+  csv_filename = "Dataset PAD 2021-2025.csv"  # Nama file CSV di dalam ZIP
 
-  # Membaca file CSV langsung dari dalam arsip ZIP
   with zipfile.ZipFile(zip_path, "r") as z:
     with z.open(csv_filename) as f:
       try:
@@ -30,11 +29,17 @@ def load_data():
   # Membersihkan spasi ekstra pada nama kolom
   df.columns = df.columns.str.strip()
 
-  # Memastikan kolom 'sum' bertipe numerik
+  # Membersihkan dan mengonversi kolom numerik 'sum'
   if "sum" in df.columns:
     df["sum"] = pd.to_numeric(
-        df["sum"].astype(str).str.replace(",", "."), errors="coerce"
+        df["sum"].astype(str).str.replace(",", ".").str.strip(), errors="coerce"
     )
+
+  # Membersihkan dan mengonversi kolom 'Tahun' menjadi integer
+  if "Tahun" in df.columns:
+    df["Tahun"] = pd.to_numeric(df["Tahun"], errors="coerce")
+    df = df.dropna(subset=["Tahun"])
+    df["Tahun"] = df["Tahun"].astype(int)
 
   return df
 
@@ -43,8 +48,8 @@ try:
   df = load_data()
 except Exception as e:
   st.error(
-      "Gagal memuat file dataset dari ZIP. Pastikan file 'Dataset.zip' sudah"
-      f" di-upload ke GitHub.\nError: {e}"
+      "Gagal memuat file dataset. Pastikan 'Dataset.zip' sudah di-upload ke"
+      f" GitHub.\nError: {e}"
   )
   st.stop()
 
@@ -88,31 +93,22 @@ st.markdown(f"### 📍 Menampilkan Data untuk: **{selected_pemda}**")
 st.markdown("#### 📋 Tabel Agregat Jenis PDRD (dalam Miliar Rupiah)")
 try:
   if "Objek_Lv1" in df_filtered.columns and "Tahun" in df_filtered.columns:
-    if df_filtered["Tahun"].nunique() > 1:
-      pivot_summary = (
-          df_filtered.pivot_table(
-              index="Objek_Lv1", columns="Tahun", values="sum", aggfunc="sum"
-          )
-          .fillna(0)
-          / 1e9
-      )
-      st.dataframe(
-          pivot_summary.style.format("{,.2f}"), use_container_width=True
-      )
-    else:
-      pivot_summary = (
-          df_filtered.groupby("Objek_Lv1")["sum"].sum().reset_index()
-      )
-      pivot_summary["Nilai (Miliar Rp)"] = pivot_summary["sum"] / 1e9
-      pivot_summary = pivot_summary[["Objek_Lv1", "Nilai (Miliar Rp)"]]
-      st.dataframe(
-          pivot_summary.style.format({"Nilai (Miliar Rp)": "{:,.2f}"}),
-          use_container_width=True,
-      )
+    # Membuat Pivot Table dengan kolom Tahun tersusun ke samping
+    pivot_summary = (
+        df_filtered.pivot_table(
+            index="Objek_Lv1", columns="Tahun", values="sum", aggfunc="sum"
+        )
+        .fillna(0)
+        / 1e9
+    )  # Dikonversi ke Miliar Rupiah
+
+    st.dataframe(pivot_summary.style.format("{,.2f}"), use_container_width=True)
   else:
     st.error("Kolom 'Objek_Lv1' atau 'Tahun' tidak ditemukan di dataset.")
 except Exception as err:
-  st.warning(f"Gagal membentuk tabel agregat: {err}")
+  st.warning(
+      f"Gagal membentuk tabel agregat: {err}. Menampilkan data mentah:"
+  )
   st.dataframe(df_filtered.head())
 
 # --- BAGIAN VISUALISASI GRAFIK ---
@@ -159,7 +155,7 @@ with col2:
             "PAD|PENDAPATAN ASLI", case=False, na=False
         )
     ]
-    if not df_pad.empty and df_pad["Tahun"].nunique() > 1:
+    if not df_pad.empty:
       pad_trend = (
           df_pad.groupby("Tahun")["sum"].sum().reset_index()
       )
@@ -180,9 +176,9 @@ with col2:
       ax.set_ylabel("Total PAD (Triliun Rp)")
       st.pyplot(fig)
     else:
-      st.info("Tren PAD memerlukan data lebih dari satu tahun.")
+      st.info("Data tren PAD tidak tersedia.")
   except Exception:
     st.info("Grafik tren PAD belum dapat dirender.")
 
 st.markdown("---")
-st.caption("💡 Dashboard PDRD Data Hub - Membaca Arsip ZIP secara Langsung.")
+st.caption("💡 Dashboard PDRD Data Hub - Berbasis Objek Level 1.")
