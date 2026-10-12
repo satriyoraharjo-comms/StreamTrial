@@ -85,9 +85,9 @@ st.markdown(f"### 📍 Menampilkan Data untuk: **{selected_pemda}**")
 st.markdown("#### 📋 Tabel Agregat Jenis PDRD (dalam Miliar Rupiah)")
 try:
   group_col = (
-      "Objek_Lv1"
-      if "Objek_Lv1" in df_filtered.columns
-      else "standarjenismap"
+      "Objek_Lv2"
+      if "Objek_Lv2" in df_filtered.columns
+      else "standarobjekmap"
   )
 
   if group_col in df_filtered.columns and "Tahun" in df_filtered.columns:
