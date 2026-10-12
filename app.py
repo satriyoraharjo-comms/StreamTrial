@@ -15,7 +15,6 @@ st.markdown("PDRD Data Insight Window - Agregat Provinsi & Pemda.")
 # Fungsi untuk memuat data langsung dari file Excel
 @st.cache_data
 def load_data():
-  # Sesuaikan nama file Excel Anda di GitHub jika berbeda (misal: Dataset.xlsx)
   file_path = "Dataset PAD 2021-2025.xlsx"
   df = pd.read_excel(file_path, sheet_name="Dataset PAD 2021-2025")
 
@@ -85,7 +84,6 @@ st.markdown(f"### 📍 Menampilkan Data untuk: **{selected_pemda}**")
 # --- TABEL AGREGAT AMAN & TERSTRUKTUR ---
 st.markdown("#### 📋 Tabel Agregat Jenis PDRD (dalam Miliar Rupiah)")
 try:
-  # Tentukan kolom kategori baris yang tersedia
   group_col = (
       "Objek_Lv1"
       if "Objek_Lv1" in df_filtered.columns
@@ -93,18 +91,15 @@ try:
   )
 
   if group_col in df_filtered.columns and "Tahun" in df_filtered.columns:
-    # Menggunakan groupby + unstack yang sangat stabil terhadap duplikasi indeks
     pivot_summary = (
         df_filtered.groupby([group_col, "Tahun"])["sum"].sum().unstack(fill_value=0)
         / 1e9
-    )  # Dikonversi ke Miliar Rupiah
+    )
 
-    # Pastikan kolom tahun 2021 s.d 2026 selalu tampil lengkap
     for thn in [2021, 2022, 2023, 2024, 2025, 2026]:
       if thn not in pivot_summary.columns:
         pivot_summary[thn] = 0.0
 
-    # Urutkan kolom secara kronologis
     pivot_summary = pivot_summary[
         [
             c
@@ -124,7 +119,6 @@ try:
     st.dataframe(df_filtered.head())
 
 except Exception as err:
-  # Menampilkan pesan error asli yang deskriptif jika terjadi kendala lain
   st.warning(f"Gagal membentuk tabel agregat: {str(err)}")
   st.dataframe(df_filtered.head())
 
@@ -175,9 +169,7 @@ with col2:
         )
     ]
     if not df_pad.empty:
-      pad_trend = (
-          pad_trend = df_pad.groupby("Tahun")["sum"].sum().reset_index()
-      )
+      pad_trend = df_pad.groupby("Tahun")["sum"].sum().reset_index()
       pad_trend["sum_triliun"] = pad_trend["sum"] / 1e12
 
       fig, ax = plt.subplots(figsize=(8, 4))
