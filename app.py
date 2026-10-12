@@ -8,19 +8,16 @@ st.set_page_config(
     page_title="PDRD Data Hub", page_icon="📊", layout="wide"
 )
 
-# Judul Utama Dashboard
 st.title("📊 PDRD Data Hub")
-st.markdown(
-    "PDRD Data Insight Window."
-)
+st.markdown("PDRD Data Insight Window.")
 
 
-# Fungsi untuk memuat data dengan caching agar performa cepat
+# Fungsi untuk memuat data CSV
 @st.cache_data
 def load_data():
-  file_path = "Dataset PAD 2021-2025.csv"
-  # Menggunakan Sheet2 atau Dataset utama yang sudah lengkap
-  df = pd.read_csv(file_path, sheet_name="Dataset PAD 2021-2025")
+  # Sesuaikan nama file CSV Anda di GitHub (contoh: Dataset.csv)
+  file_path = "Dataset.csv"
+  df = pd.read_csv(file_path)
   return df
 
 
@@ -28,15 +25,15 @@ try:
   df = load_data()
 except Exception as e:
   st.error(
-      "Gagal memuat file dataset. Pastikan file 'Dataset PAD 2021-2025.csv'"
-      f" berada di folder yang sama dengan app.py.\nError: {e}"
+      "Gagal memuat file dataset. Pastikan file CSV sudah di-upload ke GitHub"
+      f" di folder yang sama dengan app.py.\nError: {e}"
   )
   st.stop()
 
 # --- SIDEBAR FILTER ---
 st.sidebar.header("🎛️ Filter Data")
 
-# Filter Provinsi
+# Pastikan nama kolom sesuai dengan isi header file CSV Anda
 provinsi_list = sorted(df["Provinsi"].dropna().unique())
 selected_provinsi = st.sidebar.selectbox(
     "Pilih Provinsi", options=provinsi_list, index=0
@@ -58,8 +55,7 @@ df_filtered = df[
 # --- KONTEN UTAMA ---
 st.markdown(f"### 📍 Menampilkan Data untuk: **{selected_pemda}**")
 
-# Ringkasan Metrik Utama (Kpi Cards)
-# Mengelompokkan berdasarkan Tahun dan Jenis Pendapatan
+# Ringkasan Tabel Agregat
 pivot_summary = (
     df_filtered.pivot_table(
         index=["standarjenismap"],
@@ -69,7 +65,7 @@ pivot_summary = (
     )
     .fillna(0)
     / 1e9
-)  # Dibuat dalam satuan Miliar Rupiah
+)  # Dalam Miliar Rupiah
 
 st.markdown("#### 📋 Tabel Agregat Jenis PDRD (dalam Miliar Rupiah)")
 if not pivot_summary.empty:
@@ -83,7 +79,6 @@ col1, col2 = st.columns(2)
 
 with col1:
   st.subheader("📊 Kontribusi Pajak Utama")
-  # Mengambil data khusus Pajak Daerah (standarjenismap mengandung 'Pajak')
   df_pajak = df_filtered[
       df_filtered["standarjenismap"].str.contains("Pajak", case=False, na=False)
   ]
@@ -139,10 +134,7 @@ with col2:
   else:
     st.info("Data tren PAD tidak tersedia.")
 
-# Informasi Tambahan di bawah
 st.markdown("---")
 st.caption(
-    "💡 Tip: Anda dapat memperbarui file `Dataset PAD 2021-2025.csv` kapan saja"
-    " dan merefresh halaman web untuk memperbarui isi dashboard secara"
-    " otomatis."
+    "💡 Dashboard PDRD Data Hub - Diperbarui secara otomatis dari file CSV."
 )
