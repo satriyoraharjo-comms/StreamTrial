@@ -18,7 +18,7 @@ st.markdown(
 # Fungsi untuk memuat data dengan caching agar performa cepat
 @st.cache_data
 def load_data():
-  file_path = "C:/Users/satriyoraharjo/Kemenkeu/Dit. PDRD-2026 - TR Dapot - Documents/2026 - TR Dapot/01. Basis Data dan Profil PDRD"
+  file_path = "Dataset PAD 2021-2025.csv"
   # Menggunakan Sheet2 atau Dataset utama yang sudah lengkap
   df = pd.read_excel(file_path, sheet_name="Agregat Provinsi")
   return df
@@ -28,7 +28,7 @@ try:
   df = load_data()
 except Exception as e:
   st.error(
-      "Gagal memuat file dataset. Pastikan file 'Dataset PAD 2021-2025.xlsx'"
+      "Gagal memuat file dataset. Pastikan file 'Dataset PAD 2021-2025.csv'"
       f" berada di folder yang sama dengan app.py.\nError: {e}"
   )
   st.stop()
@@ -142,7 +142,7 @@ with col2:
 # Informasi Tambahan di bawah
 st.markdown("---")
 st.caption(
-    "💡 Tip: Anda dapat memperbarui file `Dataset PAD 2021-2025.xlsx` kapan saja"
+    "💡 Tip: Anda dapat memperbarui file `Dataset PAD 2021-2025.csv` kapan saja"
     " dan merefresh halaman web untuk memperbarui isi dashboard secara"
     " otomatis."
 )
