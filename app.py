@@ -15,7 +15,7 @@ st.markdown("PDRD Data Insight Window - Agregat Provinsi & Pemda.")
 # Fungsi untuk memuat data CSV
 @st.cache_data
 def load_data():
-  file_path = "Dataset.csv"  # Pastikan nama file CSV sesuai di GitHub
+  file_path = "Dataset PAD 2021-2025.csv"  # Pastikan nama file CSV sesuai di GitHub
   try:
     df = pd.read_csv(file_path, sep=";", on_bad_lines="skip")
   except Exception:
