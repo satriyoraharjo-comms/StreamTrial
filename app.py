@@ -15,7 +15,7 @@ st.markdown("PDRD Data Insight Window - Agregat Provinsi & Pemda.")
 # Fungsi untuk memuat data CSV
 @st.cache_data
 def load_data():
-  file_path = "Dataset PAD 2021-2025.csv"  # Pastikan nama file CSV sesuai di GitHub
+  file_path = "Dataset PAD 2021-2025.csv"  # Sesuaikan dengan nama file CSV di GitHub
   try:
     df = pd.read_csv(file_path, sep=";", on_bad_lines="skip")
   except Exception:
@@ -23,16 +23,20 @@ def load_data():
 
   # Membersihkan spasi ekstra pada nama kolom
   df.columns = df.columns.str.strip()
+
+  # Memastikan kolom 'sum' bertipe numerik
+  if "sum" in df.columns:
+    df["sum"] = pd.to_numeric(
+        df["sum"].astype(str).str.replace(",", "."), errors="coerce"
+    )
+
   return df
 
 
 try:
   df = load_data()
 except Exception as e:
-  st.error(
-      "Gagal memuat file dataset. Pastikan file CSV sudah di-upload ke GitHub"
-      f" di folder yang sama dengan app.py.\nError: {e}"
-  )
+  st.error(f"Gagal memuat file dataset. Error: {e}")
   st.stop()
 
 # --- VALIDASI KOLOM ---
@@ -72,26 +76,34 @@ df_filtered = df[
 st.markdown(f"### 📍 Menampilkan Data untuk: **{selected_pemda}**")
 
 # --- TABEL AGREGAT BERBASIS Objek_Lv1 ---
+st.markdown("#### 📋 Tabel Agregat Jenis PDRD (dalam Miliar Rupiah)")
 try:
-  # Membuat Pivot Table menggunakan Objek_Lv1 terhadap Tahun
-  pivot_summary = (
-      df_filtered.pivot_table(
-          index=["Objek_Lv1"],
-          columns="Tahun",
-          values="sum",
-          aggfunc="sum",
-      )
-      .fillna(0)
-      / 1e9
-  )  # Dikonversi ke dalam Satuan Miliar Rupiah
+  # Pastikan kolom Objek_Lv1 dan Tahun tersedia
+  if "Objek_Lv1" in df_filtered.columns and "Tahun" in df_filtered.columns:
+    pivot_summary = (
+        df_filtered.pivot_table(
+            index="Objek_Lv1", columns="Tahun", values="sum", aggfunc="sum"
+        )
+        .fillna(0)
+        / 1e9
+    )  # Dikonversi ke Miliar Rupiah
 
-  st.markdown("#### 📋 Tabel Agregat Jenis PDRD (dalam Miliar Rupiah)")
-  if not pivot_summary.empty:
-    st.dataframe(pivot_summary.style.format("{,.2f}"), use_container_width=True)
+    if not pivot_summary.empty:
+      st.dataframe(
+          pivot_summary.style.format("{,.2f}"), use_container_width=True
+      )
+    else:
+      st.warning("Tidak ada data untuk kombinasi pemda dan tahun tersebut.")
   else:
-    st.warning("Tidak ada data untuk pilihan pemda tersebut.")
+    st.error(
+        "Kolom 'Objek_Lv1' atau 'Tahun' tidak ditemukan di dalam dataset CSV"
+        " Anda."
+    )
+    st.dataframe(df_filtered.head())
 except Exception as err:
-  st.warning(f"Gagal membentuk tabel agregat: {err}")
+  st.warning(
+      f"Gagal membentuk tabel agregat: {err}. Menampilkan data mentah:"
+  )
   st.dataframe(df_filtered.head())
 
 # --- BAGIAN VISUALISASI GRAFIK ---
@@ -164,6 +176,4 @@ with col2:
     st.info("Grafik tren PAD belum dapat dirender.")
 
 st.markdown("---")
-st.caption(
-    "💡 Dashboard PDRD Data Hub - Berbasis Objek Level 1 & Pemetaan Data CSV."
-)
+st.caption("💡 Dashboard PDRD Data Hub - Berbasis Objek Level 1.")
