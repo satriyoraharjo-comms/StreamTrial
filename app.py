@@ -1,4 +1,3 @@
-import zipfile
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
@@ -13,18 +12,12 @@ st.title("📊 PDRD Data Hub")
 st.markdown("PDRD Data Insight Window - Agregat Provinsi & Pemda.")
 
 
-# Fungsi untuk memuat data ZIP / CSV dengan aman
+# Fungsi untuk memuat data langsung dari file Excel
 @st.cache_data
 def load_data():
-  zip_path = "Dataset PAD 2021-2025.zip"  # Nama file ZIP di GitHub
-  csv_filename = "Dataset PAD 2021-2025.csv"  # Nama file CSV di dalam ZIP
-
-  with zipfile.ZipFile(zip_path, "r") as z:
-    with z.open(csv_filename) as f:
-      try:
-        df = pd.read_csv(f, sep=";", on_bad_lines="skip")
-      except Exception:
-        df = pd.read_csv(f, sep=",", on_bad_lines="skip")
+  file_path = "Dataset PAD 2021-2025.xlsx"  # Pastikan file Excel ini ada di GitHub
+  # Membaca langsung dari sheet 'Dataset' yang berisi data lengkap 2021-2026
+  df = pd.read_excel(file_path, sheet_name="Dataset PAD 2021-2025")
 
   # Membersihkan spasi ekstra pada nama kolom
   df.columns = df.columns.str.strip()
@@ -48,8 +41,8 @@ try:
   df = load_data()
 except Exception as e:
   st.error(
-      "Gagal memuat file dataset. Pastikan 'Dataset.zip' sudah di-upload ke"
-      f" GitHub.\nError: {e}"
+      "Gagal memuat file Excel. Pastikan file 'Dataset PAD 2021-2025.xlsx'"
+      f" sudah di-upload ke GitHub.\nError: {e}"
   )
   st.stop()
 
@@ -89,18 +82,17 @@ df_filtered = df[
 # --- KONTEN UTAMA ---
 st.markdown(f"### 📍 Menampilkan Data untuk: **{selected_pemda}**")
 
-# --- TABEL AGREGAT BERBASIS standarkelompokmap / standarjenismap (Tahun 2021 - 2026) ---
+# --- TABEL AGREGAT BERBASIS standarjenismap (Tahun 2021 - 2026) ---
 st.markdown("#### 📋 Tabel Agregat Jenis PDRD (dalam Miliar Rupiah)")
 try:
-  # Tentukan kolom pengelompokan yang tersedia
   group_col = (
-      "standarobjekmap"
-      if "standarobjekmap" in df_filtered.columns
-      else "Objek_Lv2"
+      "standarjenismap"
+      if "standarjenismap" in df_filtered.columns
+      else "Objek_Lv1"
   )
 
   if group_col in df_filtered.columns and "Tahun" in df_filtered.columns:
-    # Menggunakan groupby + unstack agar lebih aman dari konflik indeks duplikat
+    # Menggunakan groupby + unstack agar tabel tersusun menyamping berdasarkan Tahun (2021-2026)
     pivot_summary = (
         df_filtered.groupby([group_col, "Tahun"])["sum"].sum().unstack(fill_value=0)
         / 1e9
@@ -191,4 +183,4 @@ with col2:
     st.info("Grafik tren PAD belum dapat dirender.")
 
 st.markdown("---")
-st.caption("💡 Dashboard PDRD Data Hub - Berbasis Dataset Utama & Arsip ZIP.")
+st.caption("💡 Dashboard PDRD Data Hub - Berbasis File Excel Langsung.")
