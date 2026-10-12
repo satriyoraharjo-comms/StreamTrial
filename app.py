@@ -20,7 +20,7 @@ st.markdown(
 def load_data():
   file_path = "Dataset PAD 2021-2025.csv"
   # Menggunakan Sheet2 atau Dataset utama yang sudah lengkap
-  df = pd.read_csv(file_path, sheet_name="Agregat Provinsi")
+  df = pd.read_csv(file_path, sheet_name="Dataset PAD 2021-2025")
   return df
 
 
