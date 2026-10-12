@@ -17,7 +17,7 @@ st.markdown("PDRD Data Insight Window - Agregat Provinsi & Pemda.")
 @st.cache_data
 def load_data():
   zip_path = "Dataset PAD 2021-2025.zip"  # Nama file ZIP di GitHub
-  csv_filename = "Dataset 2021-2025.csv"  # Nama file CSV di dalam ZIP
+  csv_filename = "Dataset PAD 2021-2025.csv"  # Nama file CSV di dalam ZIP
 
   with zipfile.ZipFile(zip_path, "r") as z:
     with z.open(csv_filename) as f:
