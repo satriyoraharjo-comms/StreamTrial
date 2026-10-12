@@ -81,46 +81,78 @@ df_filtered = df[
 # --- KONTEN UTAMA ---
 st.markdown(f"### 📍 Menampilkan Data untuk: **{selected_pemda}**")
 
-# --- TABEL AGREGAT AMAN & STABIL ---
-st.markdown("#### 📋 Tabel Agregat Jenis PDRD (dalam Miliar Rupiah)")
+# --- TABEL AGREGAT HIERARKI (OBJEK LV1 & LV2) ---
+st.markdown(
+    "#### 📋 Tabel Agregat Jenis Pdrd (Hierarki Objek Lv1 & Lv2 dalam Miliar"
+    " Rupiah)"
+)
 try:
-  group_col = (
-      "Objek_Lv2"
-      if "Objek_Lv2" in df_filtered.columns
-      else "standarobjekmap"
-  )
+  if (
+      "Objek_Lv1" in df_filtered.columns
+      and "Objek_Lv2" in df_filtered.columns
+      and "Tahun" in df_filtered.columns
+  ):
 
-  if group_col in df_filtered.columns and "Tahun" in df_filtered.columns:
-    # Mengelompokkan dan menyusun data menyamping berdasarkan Tahun
-    pivot_summary = (
-        df_filtered.groupby([group_col, "Tahun"])["sum"].sum().unstack(fill_value=0)
+    # 1. Agregasi berdasarkan Lv1 dan Lv2 terhadap Tahun
+    grouped = (
+        df_filtered.groupby(["Objek_Lv1", "Objek_Lv2", "Tahun"])["sum"]
+        .sum()
+        .unstack(fill_value=0)
         / 1e9
     )
 
-    # Memastikan kolom tahun 2021 s.d. 2026 selalu tersedia lengkap
+    # Memastikan seluruh rentang tahun (2021 s.d. 2026) ada
     for thn in [2021, 2022, 2023, 2024, 2025, 2026]:
-      if thn not in pivot_summary.columns:
-        pivot_summary[thn] = 0.0
+      if thn not in grouped.columns:
+        grouped[thn] = 0.0
 
-    pivot_summary = pivot_summary[
-        [
-            c
-            for c in [2021, 2022, 2023, 2024, 2025, 2026]
-            if c in pivot_summary.columns
-        ]
+    tahun_cols = [
+        c for c in [2021, 2022, 2023, 2024, 2025, 2026] if c in grouped.columns
     ]
+    grouped = grouped[tahun_cols]
 
-    if not pivot_summary.empty:
-      # Ditampilkan langsung tanpa .style.format agar terhindar dari error pemisah format
-      st.dataframe(pivot_summary, use_container_width=True)
+    # 2. Menyusun baris hirarki: Total Lv1 di atas, diikuti sub-baris Lv2 yang menjorok dan italic
+    hierarchical_rows = []
+
+    for lv1 in sorted(grouped.index.get_level_values(0).unique()):
+      # Baris Total / Agregat Objek_Lv1 (Tampil Normal / Bold secara visual)
+      lv1_data = grouped.loc[lv1].sum()
+      lv1_row = {"Jenis / Objek PDRD": f"**{lv1}**"}
+      for thn in tahun_cols:
+        lv1_row[thn] = lv1_data[thn]
+      hierarchical_rows.append(lv1_row)
+
+      # Baris Rincian Objek_Lv2 (Menjorok ke dalam menggunakan spasi khusus & berhuruf miring)
+      lv2_sub = grouped.loc[lv1]
+      if isinstance(lv2_sub.index, pd.MultiIndex) or len(lv2_sub.shape) > 1:
+        lv2_items = lv2_sub.index.unique()
+      else:
+        lv2_items = [lv2_sub.name] if hasattr(lv2_sub, "name") else lv2_sub.index
+
+      for lv2 in lv2_sub.index:
+        lv2_data = lv2_sub.loc[lv2]
+        # Menggunakan karakter spasi tak terputus Unicode (\u00A0) untuk efek menjorok
+        indent_name = f"\u00A0\u00A0\u00A0\u00A0*{lv2}*"
+        lv2_row = {"Jenis / Objek PDRD": indent_name}
+        for thn in tahun_cols:
+          lv2_row[thn] = lv2_data[thn]
+        hierarchical_rows.append(lv2_row)
+
+    df_hierarki = pd.DataFrame(hierarchical_rows)
+
+    if not df_hierarki.empty:
+      st.dataframe(df_hierarki, use_container_width=True, hide_index=True)
     else:
       st.warning("Tidak ada data untuk kombinasi wilayah tersebut.")
   else:
-    st.error("Kolom kategori atau 'Tahun' tidak ditemukan.")
+    st.error(
+        "Kolom 'Objek_Lv1', 'Objek_Lv2', atau 'Tahun' tidak ditemukan di"
+        " dataset."
+    )
     st.dataframe(df_filtered.head())
 
 except Exception as err:
-  st.warning(f"Gagal membentuk tabel agregat: {str(err)}")
+  st.warning(f"Gagal membentuk tabel agregat hierarki: {str(err)}")
   st.dataframe(df_filtered.head())
 
 # --- BAGIAN VISUALISASI GRAFIK ---
@@ -193,4 +225,4 @@ with col2:
     st.info("Grafik tren PAD belum dapat dirender.")
 
 st.markdown("---")
-st.caption("💡 Dashboard PDRD Data Hub - Agregat Stabil.")
+st.caption("💡 Dashboard PDRD Data Hub - Hierarki Objek Lv1 & Lv2.")
