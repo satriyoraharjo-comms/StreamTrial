@@ -1,3 +1,4 @@
+import zipfile
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
@@ -12,14 +13,19 @@ st.title("📊 PDRD Data Hub")
 st.markdown("PDRD Data Insight Window - Agregat Provinsi & Pemda.")
 
 
-# Fungsi untuk memuat data CSV
+# Fungsi untuk memuat data dari file ZIP di GitHub
 @st.cache_data
 def load_data():
-  file_path = "Dataset PAD 2021-2025.csv"  # Pastikan nama file CSV sesuai di GitHub
-  try:
-    df = pd.read_csv(file_path, sep=";", on_bad_lines="skip")
-  except Exception:
-    df = pd.read_csv(file_path, sep=",", on_bad_lines="skip")
+  zip_path = "Dataset PAD 2021-2025.zip"  # Ganti dengan nama file zip Anda di GitHub
+  csv_filename = "Dataset PAD 2021-2025.csv"  # Nama file CSV yang ada di dalam zip
+
+  # Membaca file CSV langsung dari dalam arsip ZIP
+  with zipfile.ZipFile(zip_path, "r") as z:
+    with z.open(csv_filename) as f:
+      try:
+        df = pd.read_csv(f, sep=";", on_bad_lines="skip")
+      except Exception:
+        df = pd.read_csv(f, sep=",", on_bad_lines="skip")
 
   # Membersihkan spasi ekstra pada nama kolom
   df.columns = df.columns.str.strip()
@@ -36,7 +42,10 @@ def load_data():
 try:
   df = load_data()
 except Exception as e:
-  st.error(f"Gagal memuat file dataset. Error: {e}")
+  st.error(
+      "Gagal memuat file dataset dari ZIP. Pastikan file 'Dataset.zip' sudah"
+      f" di-upload ke GitHub.\nError: {e}"
+  )
   st.stop()
 
 # --- VALIDASI KOLOM ---
@@ -75,11 +84,10 @@ df_filtered = df[
 # --- KONTEN UTAMA ---
 st.markdown(f"### 📍 Menampilkan Data untuk: **{selected_pemda}**")
 
-# --- TABEL AGREGAT BERBASIS Objek_Lv1 ---
+# --- TABEL AGREGAT BERBASIS Objek_Lv1 (Tahun 2021 - 2026) ---
 st.markdown("#### 📋 Tabel Agregat Jenis PDRD (dalam Miliar Rupiah)")
 try:
   if "Objek_Lv1" in df_filtered.columns and "Tahun" in df_filtered.columns:
-    # Cek jumlah unique tahun. Jika hanya 1 tahun, gunakan groupby agar tidak error pivot
     if df_filtered["Tahun"].nunique() > 1:
       pivot_summary = (
           df_filtered.pivot_table(
@@ -92,7 +100,6 @@ try:
           pivot_summary.style.format("{,.2f}"), use_container_width=True
       )
     else:
-      # Jika hanya ada 1 tahun, tampilkan sebagai ringkasan kolom tunggal
       pivot_summary = (
           df_filtered.groupby("Objek_Lv1")["sum"].sum().reset_index()
       )
@@ -173,11 +180,9 @@ with col2:
       ax.set_ylabel("Total PAD (Triliun Rp)")
       st.pyplot(fig)
     else:
-      st.info(
-          "Tren PAD memerlukan data lebih dari satu tahun di file CSV Anda."
-      )
+      st.info("Tren PAD memerlukan data lebih dari satu tahun.")
   except Exception:
     st.info("Grafik tren PAD belum dapat dirender.")
 
 st.markdown("---")
-st.caption("💡 Dashboard PDRD Data Hub - Berbasis Objek Level 1.")
+st.caption("💡 Dashboard PDRD Data Hub - Membaca Arsip ZIP secara Langsung.")
