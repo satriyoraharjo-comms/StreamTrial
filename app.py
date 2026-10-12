@@ -15,8 +15,7 @@ st.markdown("PDRD Data Insight Window - Agregat Provinsi & Pemda.")
 # Fungsi untuk memuat data langsung dari file Excel
 @st.cache_data
 def load_data():
-  file_path = "Dataset PAD 2021-2025.xlsx"  # Pastikan file Excel ini ada di GitHub
-  # Membaca langsung dari sheet 'Dataset' yang berisi data lengkap 2021-2026
+  file_path = "Dataset PAD 2021-2025.xlsx"
   df = pd.read_excel(file_path, sheet_name="Dataset PAD 2021-2025")
 
   # Membersihkan spasi ekstra pada nama kolom
@@ -76,39 +75,54 @@ selected_pemda = st.sidebar.selectbox(
 # Filter Data Berdasarkan Pilihan User
 df_filtered = df[
     (df[kolom_provinsi] == selected_provinsi)
-    & (df[kolom_pemda] == selected_pemda)
+    & (df[kolom_pemda] == selected_pemda]
 ]
 
 # --- KONTEN UTAMA ---
 st.markdown(f"### 📍 Menampilkan Data untuk: **{selected_pemda}**")
 
-# --- TABEL AGREGAT BERBASIS standarjenismap (Tahun 2021 - 2026) ---
+# --- TABEL AGREGAT REPLIKASI MANUAL (ANTI-GAGAL) ---
 st.markdown("#### 📋 Tabel Agregat Jenis PDRD (dalam Miliar Rupiah)")
 try:
-  group_col = (
-      "standarjenismap"
-      if "standarjenismap" in df_filtered.columns
-      else "Objek_Lv1"
+  # Pastikan kolom tahun yang tersedia (misal: 2021 sampai 2026)
+  tahun_list = sorted(df_filtered["Tahun"].unique())
+
+  # 1. Membuat pivot dasar antara Objek/Jenis dengan Tahun
+  group_key = (
+      "Objek_Lv1"
+      if "Objek_Lv1" in df_filtered.columns
+      else "standarjenismap"
   )
-
-  if group_col in df_filtered.columns and "Tahun" in df_filtered.columns:
-    # Menggunakan groupby + unstack agar tabel tersusun menyamping berdasarkan Tahun (2021-2026)
-    pivot_summary = (
-        df_filtered.groupby([group_col, "Tahun"])["sum"].sum().unstack(fill_value=0)
-        / 1e9
-    )  # Dikonversi ke Miliar Rupiah
-
-    if not pivot_summary.empty:
-      st.dataframe(
-          pivot_summary.style.format("{,.2f}"), use_container_width=True
+  pivot_base = (
+      df_filtered.pivot_table(
+          index=group_key, columns="Tahun", values="sum", aggfunc="sum"
       )
-    else:
-      st.warning("Tidak ada data untuk filter pemda tersebut.")
+      .fillna(0)
+      / 1e9
+  )  # Dikonversi ke Miliar Rupiah
+
+  # Pastikan seluruh rentang tahun (2021-2026) ada sebagai kolom walaupun nilainya 0
+  for thn in [2021, 2022, 2023, 2024, 2025, 2026]:
+    if thn not in pivot_base.columns:
+      pivot_base[thn] = 0.0
+
+  # Urutkan kolom tahun secara kronologis
+  pivot_base = pivot_base[
+      [c for c in [2021, 2022, 2023, 2024, 2025, 2026] if c in pivot_base.columns]
+  ]
+
+  if not pivot_base.empty:
+    st.dataframe(
+        pivot_base.style.format("{,.2f}"), use_container_width=True
+    )
   else:
-    st.error("Kolom pengelompokan atau 'Tahun' tidak ditemukan.")
-    st.dataframe(df_filtered.head())
+    st.warning("Tidak ada data untuk kombinasi wilayah tersebut.")
+
 except Exception as err:
-  st.warning(f"Gagal membentuk tabel agregat. Menampilkan data mentah:")
+  st.warning(
+      f"Gagal membentuk tabel agregat terstruktur: {err}. Menampilkan data"
+      " mentah:"
+  )
   st.dataframe(df_filtered.head())
 
 # --- BAGIAN VISUALISASI GRAFIK ---
@@ -180,7 +194,7 @@ with col2:
     else:
       st.info("Data tren PAD tidak tersedia.")
   except Exception:
-    st.info("Grafik tren PAD belum dapat dirender.")
+      st.info("Grafik tren PAD belum dapat dirender.")
 
 st.markdown("---")
-st.caption("💡 Dashboard PDRD Data Hub - Berbasis File Excel Langsung.")
+st.caption("💡 Dashboard PDRD Data Hub - Replikasi Tabel Terstruktur.")
