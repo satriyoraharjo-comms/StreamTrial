@@ -75,7 +75,7 @@ selected_pemda = st.sidebar.selectbox(
 # Filter Data Berdasarkan Pilihan User
 df_filtered = df[
     (df[kolom_provinsi] == selected_provinsi)
-    & (df[kolom_pemda] == selected_pemda]
+    & (df[kolom_pemda] == selected_pemda)
 ]
 
 # --- KONTEN UTAMA ---
