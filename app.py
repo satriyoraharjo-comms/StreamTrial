@@ -9,15 +9,18 @@ st.set_page_config(
 )
 
 st.title("📊 PDRD Data Hub")
-st.markdown("PDRD Data Insight Window.")
+st.markdown("PDRD Data Insight Window - Agregat Provinsi & Pemda.")
 
 
 # Fungsi untuk memuat data CSV
 @st.cache_data
 def load_data():
-  file_path = "Dataset PAD 2021-2025.csv"  # Sesuaikan nama file CSV Anda di GitHub
-  # Membaca CSV dengan pemisah titik koma (sep=';')
-  df = pd.read_csv(file_path, sep=";", on_bad_lines="skip")
+  file_path = "Dataset.csv"  # Pastikan nama file CSV sesuai di GitHub
+  try:
+    df = pd.read_csv(file_path, sep=";", on_bad_lines="skip")
+  except Exception:
+    df = pd.read_csv(file_path, sep=",", on_bad_lines="skip")
+
   # Membersihkan spasi ekstra pada nama kolom
   df.columns = df.columns.str.strip()
   return df
@@ -33,7 +36,6 @@ except Exception as e:
   st.stop()
 
 # --- VALIDASI KOLOM ---
-# Menyesuaikan dengan nama kolom yang mungkin ada di CSV Anda
 kolom_provinsi = (
     "Provinsi"
     if "Provinsi" in df.columns
@@ -69,18 +71,19 @@ df_filtered = df[
 # --- KONTEN UTAMA ---
 st.markdown(f"### 📍 Menampilkan Data untuk: **{selected_pemda}**")
 
-# Ringkasan Tabel Agregat (Pastikan kolom standarjenismap dan sum ada)
+# --- TABEL AGREGAT BERBASIS Objek_Lv1 ---
 try:
+  # Membuat Pivot Table menggunakan Objek_Lv1 terhadap Tahun
   pivot_summary = (
       df_filtered.pivot_table(
-          index=["standarjenismap"],
+          index=["Objek_Lv1"],
           columns="Tahun",
           values="sum",
           aggfunc="sum",
       )
       .fillna(0)
       / 1e9
-  )  # Dalam Miliar Rupiah
+  )  # Dikonversi ke dalam Satuan Miliar Rupiah
 
   st.markdown("#### 📋 Tabel Agregat Jenis PDRD (dalam Miliar Rupiah)")
   if not pivot_summary.empty:
@@ -88,9 +91,7 @@ try:
   else:
     st.warning("Tidak ada data untuk pilihan pemda tersebut.")
 except Exception as err:
-  st.warning(
-      f"Struktur kolom ringkasan tidak ditemukan secara persis: {err}"
-  )
+  st.warning(f"Gagal membentuk tabel agregat: {err}")
   st.dataframe(df_filtered.head())
 
 # --- BAGIAN VISUALISASI GRAFIK ---
@@ -106,9 +107,7 @@ with col1:
         )
     ]
     if not df_pajak.empty:
-      pajak_summary = (
-          df_pajak.groupby("standarobjekmap")["sum"].sum().reset_index()
-      )
+      pajak_summary = df_pajak.groupby("Objek_Lv1")["sum"].sum().reset_index()
       pajak_summary = pajak_summary.sort_values(by="sum", ascending=False).head(
           5
       )
@@ -116,20 +115,20 @@ with col1:
       fig, ax = plt.subplots(figsize=(8, 4))
       sns.barplot(
           data=pajak_summary,
-          x="standarobjekmap",
+          x="Objek_Lv1",
           y="sum",
           palette="Blues_r",
           ax=ax,
       )
-      ax.set_title(f"Top 5 Kontributor Pajak di {selected_pemda}")
-      ax.set_xlabel("Objek Pajak")
+      ax.set_title(f"Top 5 Kontributor Objek Pajak di {selected_pemda}")
+      ax.set_xlabel("Objek Pajak (Lv1)")
       ax.set_ylabel("Nilai (Rp)")
       plt.xticks(rotation=30, ha="right")
       st.pyplot(fig)
     else:
       st.info("Data pajak tidak tersedia.")
   except Exception:
-    st.info("Grafik kontribusi pajak belum dapat dirender dari kolom saat ini.")
+    st.info("Grafik kontribusi pajak belum dapat dirender.")
 
 with col2:
   st.subheader("📈 Tren PAD per Tahun (Triliun Rp)")
@@ -162,9 +161,9 @@ with col2:
     else:
       st.info("Data tren PAD tidak tersedia.")
   except Exception:
-    st.info("Grafik tren PAD belum dapat dirender dari kolom saat ini.")
+    st.info("Grafik tren PAD belum dapat dirender.")
 
 st.markdown("---")
 st.caption(
-    "💡 Dashboard PDRD Data Hub - Diperbarui secara otomatis dari file CSV."
+    "💡 Dashboard PDRD Data Hub - Berbasis Objek Level 1 & Pemetaan Data CSV."
 )
