@@ -15,9 +15,14 @@ st.markdown("PDRD Data Insight Window.")
 # Fungsi untuk memuat data CSV
 @st.cache_data
 def load_data():
-  # Sesuaikan nama file CSV Anda di GitHub (contoh: Dataset.csv)
-  file_path = "Dataset PAD 2021-2025.csv"
-  df = pd.read_csv(file_path)
+  file_path = "Dataset.csv"  # Sesuaikan dengan nama file CSV di GitHub Anda
+
+  # Mencoba membaca dengan delimiter koma, jika gagal coba titik koma (sep=';')
+  try:
+    df = pd.read_csv(file_path, on_bad_lines="skip")
+  except Exception:
+    df = pd.read_csv(file_path, sep=";", on_bad_lines="skip")
+
   return df
 
 
