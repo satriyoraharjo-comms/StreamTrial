@@ -119,6 +119,10 @@ try:
 
     # 2. Menyusun baris hirarki: Total Lv1 di atas, diikuti sub-baris Lv2 yang menjorok dan italic
     hierarchical_rows = []
+    italic_rows_indices = (
+        []
+    )  # Menyimpan nomor baris yang merupakan Level 2 (untuk efek italic)
+    current_idx = 0
 
     for lv1 in sorted(grouped.index.get_level_values(0).unique()):
       # Baris Total / Agregat Objek_Lv1 (Bold)
@@ -127,21 +131,44 @@ try:
       for thn in tahun_cols:
         lv1_row[thn] = lv1_data[thn]
       hierarchical_rows.append(lv1_row)
+      current_idx += 1
 
       # Baris Rincian Objek_Lv2 (Menjorok & Italic)
       lv2_sub = grouped.loc[lv1]
       for lv2 in lv2_sub.index:
         lv2_data = lv2_sub.loc[lv2]
-        indent_name = f"\u00A0\u00A0\u00A0\u00A0*{lv2}*"
+        # Menggunakan spasi tak terputus Unicode (\u00A0) untuk indentasi
+        indent_name = f"\u00A0\u00A0\u00A0\u00A0{lv2}"
         lv2_row = {"Jenis / Objek PDRD (PAD)": indent_name}
         for thn in tahun_cols:
           lv2_row[thn] = lv2_data[thn]
         hierarchical_rows.append(lv2_row)
+        
+        # Catat indeks baris ini sebagai baris Level 2 yang akan dimiringkan
+        italic_rows_indices.append(current_idx)
+        current_idx += 1
 
     df_hierarki = pd.DataFrame(hierarchical_rows)
 
-    if not df_hierarki.empty:
-      st.dataframe(df_hierarki, use_container_width=True, hide_index=True)
+    # Fungsi styling CSS untuk membuat baris tertentu menjadi italic dan format angka
+    def style_hierarchy(row):
+      is_italic = row.name in italic_rows_indices
+      styles = []
+      for col in row.index:
+        if is_italic and col == "Jenis / Objek PDRD (PAD)":
+          styles.append("font-style: italic; color: #d0d0d0;")
+        elif not is_italic and col == "Jenis / Objek PDRD (PAD)":
+          styles.append("font-weight: bold;")
+        else:
+          styles.append("")
+      return styles
+
+    f not df_hierarki.empty:
+      # Menerapkan Pandas Styler untuk merender teks miring pada baris Level 2
+      formatted_df = df_hierarki.style.apply(style_hierarchy, axis=1).format(
+          {thn: "{:,.2f}" for thn in tahun_cols}
+      )
+      st.dataframe(formatted_df, use_container_width=True, hide_index=True)
     else:
       st.warning("Tidak ada data PAD untuk kombinasi wilayah tersebut.")
   else:
