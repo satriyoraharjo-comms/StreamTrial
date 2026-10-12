@@ -81,7 +81,7 @@ df_filtered = df[
 # --- KONTEN UTAMA ---
 st.markdown(f"### 📍 Menampilkan Data untuk: **{selected_pemda}**")
 
-# --- TABEL AGREGAT AMAN & TERSTRUKTUR ---
+# --- TABEL AGREGAT AMAN & STABIL ---
 st.markdown("#### 📋 Tabel Agregat Jenis PDRD (dalam Miliar Rupiah)")
 try:
   group_col = (
@@ -91,11 +91,13 @@ try:
   )
 
   if group_col in df_filtered.columns and "Tahun" in df_filtered.columns:
+    # Mengelompokkan dan menyusun data menyamping berdasarkan Tahun
     pivot_summary = (
         df_filtered.groupby([group_col, "Tahun"])["sum"].sum().unstack(fill_value=0)
         / 1e9
     )
 
+    # Memastikan kolom tahun 2021 s.d. 2026 selalu tersedia lengkap
     for thn in [2021, 2022, 2023, 2024, 2025, 2026]:
       if thn not in pivot_summary.columns:
         pivot_summary[thn] = 0.0
@@ -109,9 +111,8 @@ try:
     ]
 
     if not pivot_summary.empty:
-      st.dataframe(
-          pivot_summary.style.format("{,.2f}"), use_container_width=True
-      )
+      # Ditampilkan langsung tanpa .style.format agar terhindar dari error pemisah format
+      st.dataframe(pivot_summary, use_container_width=True)
     else:
       st.warning("Tidak ada data untuk kombinasi wilayah tersebut.")
   else:
@@ -192,4 +193,4 @@ with col2:
     st.info("Grafik tren PAD belum dapat dirender.")
 
 st.markdown("---")
-st.caption("💡 Dashboard PDRD Data Hub - Agregat Terstruktur.")
+st.caption("💡 Dashboard PDRD Data Hub - Agregat Stabil.")
