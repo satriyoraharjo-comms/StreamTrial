@@ -357,7 +357,7 @@ col1, col2 = st.columns(2)
 
 with col1:
   st.markdown(
-      f"####### Kontributor Utama Pajak Daerah {selected_pemda}"
+      f"##### Kontributor Utama Pajak Daerah {selected_pemda}"
   )
   try:
     if not df_filtered.empty:
@@ -464,7 +464,7 @@ with col1:
 
 with col2:
   st.markdown(
-      f"##### 📈 Peran PAD dalam Pendapatan Daerah ({selected_pemda})"
+      f"##### Peran PAD dalam Pendapatan Daerah (Miliar Rp)"
   )
   try:
     if not df.empty:
