@@ -95,6 +95,10 @@ with tab1:
   # Filter data seluruh provinsi
   df_agregat = df[df[kolom_provinsi] == selected_provinsi]
 
+  # Tambahkan baris penampung universal:
+  df_wilayah = df_agregat
+  display_title_wilayah = f"Provinsi {selected_provinsi} (Agregat)"
+
   if not df_agregat.empty:
     display_title_wilayah = f"Provinsi {selected_provinsi} (Agregat)"
 
@@ -115,43 +119,63 @@ with tab1:
           unsafe_allow_html=True,
       )
       try:
-        df_pajak_prov = df_agregat[
-            df_agregat["standarjenismap"].astype(str).str.startswith("41")
+        # 1. Filter murni hanya untuk kelompok Pajak Daerah (biasanya berawalan '4101')
+        df_pajak = df_wilayah[
+            df_wilayah["standarjenismap"].astype(str).str.startswith("4101")
         ]
+        if df_pajak.empty:
+          df_pajak = df_wilayah[
+              df_wilayah["standarjenismap"].astype(str).str.startswith("41")
+          ]
+
         val_col = next(
             (
                 c
                 for c in ["sum", "Nilai", "Realisasi", "Jumlah", "value"]
-                if c in df_pajak_prov.columns
+                if c in df_pajak.columns
             ),
             None,
         )
-        if val_col and not df_pajak_prov.empty:
-          top_pajak_prov = (
-              df_pajak_prov.groupby("Objek_Lv2")[val_col]
+
+        if val_col and not df_pajak.empty:
+          # 2. Salin dataframe dan kelompokkan PBJT menjadi satu nama kategori seragam "PBJT"
+          df_pajak_processed = df_pajak.copy()
+
+          # Jika uraian jenis map mengandung kata 'PBJT' atau 'Pajak Barang Jasa Tertentu', satukan namanya
+          mask_pbjt = (
+              df_pajak_processed["uraianjenismap"]
+              .astype(str)
+              .str.contains("PBJT|Barang dan Jasa Tertentu", case=False)
+          )
+          df_pajak_processed.loc[mask_pbjt, "uraianjenismap"] = "PBJT"
+
+          # Groupby berdasarkan uraian yang telah disatukan
+          top_pajak = (
+              df_pajak_processed.groupby("uraianjenismap")[val_col]
               .sum()
               .reset_index(name="total_nilai")
           )
-          total_all = top_pajak_prov["total_nilai"].sum()
+
+          total_all = top_pajak["total_nilai"].sum()
           if total_all > 0:
-            top_pajak_prov["persen"] = (
-                top_pajak_prov["total_nilai"] / total_all
+            top_pajak["persen"] = (
+                top_pajak["total_nilai"] / total_all
             ) * 100
-            top_pajak_prov = top_pajak_prov.sort_values(
+            top_pajak = top_pajak.sort_values(
                 by="persen", ascending=False
             ).head(5)
 
             fig, ax = plt.subplots(figsize=(7, 4))
             bars1 = ax.bar(
-                top_pajak_prov["Objek_Lv2"],
-                top_pajak_prov["persen"],
+                top_pajak["uraianjenismap"],
+                top_pajak["persen"],
                 color="#1b6ca8",
                 width=0.5,
             )
             ax.get_yaxis().set_visible(False)
             for spine in ax.spines.values():
               spine.set_visible(False)
-            ax.set_ylim(0, top_pajak_prov["persen"].max() * 1.3)
+            ax.set_ylim(0, top_pajak["persen"].max() * 1.3)
             plt.xticks(fontsize=8)
 
             for p in bars1:
@@ -173,7 +197,7 @@ with tab1:
         else:
           st.info("Data tidak ditemukan.")
       except Exception as e:
-        st.error(f"Error: {e}")
+        st.error(f"Error Grafik Ranking: {e}")
 
     # Grafik Kanan 1: Peran PAD dalam Pendapatan Daerah (Combo Chart)
     with col2:
@@ -310,12 +334,14 @@ with tab1:
 # =========================================================================
 with tab2:
   st.markdown(f"#### Analisis Level Pemda Provinsi {selected_provinsi}")
-
-  # Filter data khusus tingkat provinsi (sesuaikan penanda string di dataset Anda, misal 'Provinsi')
   df_prov_saja = df[
       (df[kolom_provinsi] == selected_provinsi)
       & (df[kolom_pemda].astype(str).str.contains("Provinsi|DKI", case=False))
   ]
+  
+  # Tambahkan baris penampung universal ini:
+  df_wilayah = df_prov_saja
+  display_title_wilayah = f"Pemda Provinsi {selected_provinsi}"
 
   if not df_prov_saja.empty:
     display_title_wilayah = f"Pemda Provinsi {selected_provinsi}"
@@ -335,43 +361,63 @@ with tab2:
           unsafe_allow_html=True,
       )
       try:
-        df_pajak_ps = df_prov_saja[
-            df_prov_saja["standarjenismap"].astype(str).str.startswith("41")
+        # 1. Filter murni hanya untuk kelompok Pajak Daerah (biasanya berawalan '4101')
+        df_pajak = df_wilayah[
+            df_wilayah["standarjenismap"].astype(str).str.startswith("4101")
         ]
+        if df_pajak.empty:
+          df_pajak = df_wilayah[
+              df_wilayah["standarjenismap"].astype(str).str.startswith("41")
+          ]
+
         val_col = next(
             (
                 c
                 for c in ["sum", "Nilai", "Realisasi", "Jumlah", "value"]
-                if c in df_pajak_ps.columns
+                if c in df_pajak.columns
             ),
             None,
         )
-        if val_col and not df_pajak_ps.empty:
-          top_pajak_ps = (
-              df_pajak_ps.groupby("Objek_Lv2")[val_col]
+
+        if val_col and not df_pajak.empty:
+          # 2. Salin dataframe dan kelompokkan PBJT menjadi satu nama kategori seragam "PBJT"
+          df_pajak_processed = df_pajak.copy()
+
+          # Jika uraian jenis map mengandung kata 'PBJT' atau 'Pajak Barang Jasa Tertentu', satukan namanya
+          mask_pbjt = (
+              df_pajak_processed["uraianjenismap"]
+              .astype(str)
+              .str.contains("PBJT|Barang dan Jasa Tertentu", case=False)
+          )
+          df_pajak_processed.loc[mask_pbjt, "uraianjenismap"] = "PBJT"
+
+          # Groupby berdasarkan uraian yang telah disatukan
+          top_pajak = (
+              df_pajak_processed.groupby("uraianjenismap")[val_col]
               .sum()
               .reset_index(name="total_nilai")
           )
-          total_all = top_pajak_ps["total_nilai"].sum()
+
+          total_all = top_pajak["total_nilai"].sum()
           if total_all > 0:
-            top_pajak_ps["persen"] = (
-                top_pajak_ps["total_nilai"] / total_all
+            top_pajak["persen"] = (
+                top_pajak["total_nilai"] / total_all
             ) * 100
-            top_pajak_ps = top_pajak_ps.sort_values(
+            top_pajak = top_pajak.sort_values(
                 by="persen", ascending=False
             ).head(5)
 
             fig, ax = plt.subplots(figsize=(7, 4))
             bars1 = ax.bar(
-                top_pajak_ps["Objek_Lv2"],
-                top_pajak_ps["persen"],
+                top_pajak["uraianjenismap"],
+                top_pajak["persen"],
                 color="#1b6ca8",
                 width=0.5,
             )
             ax.get_yaxis().set_visible(False)
             for spine in ax.spines.values():
               spine.set_visible(False)
-            ax.set_ylim(0, top_pajak_ps["persen"].max() * 1.3)
+            ax.set_ylim(0, top_pajak["persen"].max() * 1.3)
             plt.xticks(fontsize=8)
 
             for p in bars1:
@@ -388,8 +434,12 @@ with tab2:
                     weight="bold",
                 )
             st.pyplot(fig, use_container_width=True)
+          else:
+            st.info("Data pajak kosong.")
+        else:
+          st.info("Data tidak ditemukan.")
       except Exception as e:
-        st.error(f"Error: {e}")
+        st.error(f"Error Grafik Ranking: {e}")
 
     # Grafik Kanan 2: Peran PAD Provinsi Saja
     with col2:
@@ -544,6 +594,11 @@ with tab3:
         (df[kolom_provinsi] == selected_provinsi)
         & (df[kolom_pemda] == selected_pemda_tab3)
     ]
+    
+    # Tambahkan baris penampung universal ini:
+    df_wilayah = df_kab_saja
+    display_title_wilayah = selected_pemda_tab3
+    
     display_title_wilayah = selected_pemda_tab3
 
     st.markdown("##### 📋 Tabel Rangkuman Pendapatan Daerah (Level 2)")
@@ -561,43 +616,63 @@ with tab3:
           unsafe_allow_html=True,
       )
       try:
-        df_pajak_ks = df_kab_saja[
-            df_kab_saja["standarjenismap"].astype(str).str.startswith("41")
+        # 1. Filter murni hanya untuk kelompok Pajak Daerah (biasanya berawalan '4101')
+        df_pajak = df_wilayah[
+            df_wilayah["standarjenismap"].astype(str).str.startswith("4101")
         ]
+        if df_pajak.empty:
+          df_pajak = df_wilayah[
+              df_wilayah["standarjenismap"].astype(str).str.startswith("41")
+          ]
+
         val_col = next(
             (
                 c
                 for c in ["sum", "Nilai", "Realisasi", "Jumlah", "value"]
-                if c in df_pajak_ks.columns
+                if c in df_pajak.columns
             ),
             None,
         )
-        if val_col and not df_pajak_ks.empty:
-          top_pajak_ks = (
-              df_pajak_ks.groupby("Objek_Lv2")[val_col]
+
+        if val_col and not df_pajak.empty:
+          # 2. Salin dataframe dan kelompokkan PBJT menjadi satu nama kategori seragam "PBJT"
+          df_pajak_processed = df_pajak.copy()
+
+          # Jika uraian jenis map mengandung kata 'PBJT' atau 'Pajak Barang Jasa Tertentu', satukan namanya
+          mask_pbjt = (
+              df_pajak_processed["uraianjenismap"]
+              .astype(str)
+              .str.contains("PBJT|Barang dan Jasa Tertentu", case=False)
+          )
+          df_pajak_processed.loc[mask_pbjt, "uraianjenismap"] = "PBJT"
+
+          # Groupby berdasarkan uraian yang telah disatukan
+          top_pajak = (
+              df_pajak_processed.groupby("uraianjenismap")[val_col]
               .sum()
               .reset_index(name="total_nilai")
           )
-          total_all = top_pajak_ks["total_nilai"].sum()
+
+          total_all = top_pajak["total_nilai"].sum()
           if total_all > 0:
-            top_pajak_ks["persen"] = (
-                top_pajak_ks["total_nilai"] / total_all
+            top_pajak["persen"] = (
+                top_pajak["total_nilai"] / total_all
             ) * 100
-            top_pajak_ks = top_pajak_ks.sort_values(
+            top_pajak = top_pajak.sort_values(
                 by="persen", ascending=False
             ).head(5)
 
             fig, ax = plt.subplots(figsize=(7, 4))
             bars1 = ax.bar(
-                top_pajak_ks["Objek_Lv2"],
-                top_pajak_ks["persen"],
+                top_pajak["uraianjenismap"],
+                top_pajak["persen"],
                 color="#1b6ca8",
                 width=0.5,
             )
             ax.get_yaxis().set_visible(False)
             for spine in ax.spines.values():
               spine.set_visible(False)
-            ax.set_ylim(0, top_pajak_ks["persen"].max() * 1.3)
+            ax.set_ylim(0, top_pajak["persen"].max() * 1.3)
             plt.xticks(fontsize=8)
 
             for p in bars1:
@@ -614,8 +689,12 @@ with tab3:
                     weight="bold",
                 )
             st.pyplot(fig, use_container_width=True)
+          else:
+            st.info("Data pajak kosong.")
+        else:
+          st.info("Data tidak ditemukan.")
       except Exception as e:
-        st.error(f"Error: {e}")
+        st.error(f"Error Grafik Ranking: {e}")
 
     # Grafik Kanan 3: Peran PAD Kab./Kota Saja
     with col2:
