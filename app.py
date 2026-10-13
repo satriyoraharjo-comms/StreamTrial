@@ -253,7 +253,7 @@ try:
         for col in row.index:
             if col == "Jenis PAD":
                 if st_type == "italic":
-                styles.append("font-style: italic; color: #d0d0d0;")
+                    styles.append("font-style: italic; color: #d0d0d0;")
             elif st_type == "subtotal":
                 styles.append(
                 "font-weight: bold; background-color: rgba(255, 255, 255, 0.05);"
