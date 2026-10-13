@@ -356,44 +356,57 @@ st.markdown("---")
 col1, col2 = st.columns(2)
 
 with col1:
-  st.subheader("📊 Top 5 Komponen PAD")
+  st.subheader("📊 Top 5 Objek Pajak Daerah")
   try:
     if not df_filtered.empty:
-      df_pajak_daerah = df_filtered[
+      # Pastikan nama kolom objek map sesuai dengan kolom yang ada di dataset Anda
+      # Cek apakah menggunakan 'standarobjekmap' atau 'Objek_Lv2'
+      kolom_objek = (
+          "standarobjekmap"
+          if "standarobjekmap" in df_filtered.columns
+          else "Objek_Lv2"
+      )
+
+      df_pajak_saja = df_filtered[
           (df_filtered["Objek_Lv1"] == "Pajak Daerah")
-            (df_filtered["standarjenismap"]
-             .astype(str)
-             .str.startswith("4101")
-        )
+          | (
+              df_filtered["standarjenismap"]
+              .astype(str)
+              .str.startswith("4101")
+          )
       ]
-      
-      if not df_pajak_daerah.empty:
+
+      if not df_pajak_saja.empty and kolom_objek in df_pajak_saja.columns:
         pajak_summary = (
-            df_pajak_daerah.groupby("standarobjekmap")["sum"]
-            .sum()
-            .reset_index()
+            df_pajak_saja.groupby(kolom_objek)["sum"].sum().reset_index()
         )
         pajak_summary = pajak_summary.sort_values(
             by="sum", ascending=False
         ).head(5)
 
-        fig, ax = plt.subplots(figsize=(8, 4))
-        sns.barplot(
-            data=pajak_summary,
-            x="standarobjekmap",
-            y="sum",
-            palette="Blues_r",
-            ax=ax,
-        )
-        ax.set_title(f"Top 5 Komponen di {selected_pemda}")
-        ax.set_xlabel("Objek Map")
-        ax.set_ylabel("Nilai (Rp)")
-        plt.xticks(rotation=30, ha="right")
-        st.pyplot(fig)
+        if not pajak_summary.empty:
+          fig, ax = plt.subplots(figsize=(8, 4))
+          sns.barplot(
+              data=pajak_summary,
+              x=kolom_objek,
+              y="sum",
+              palette="Blues_r",
+              ax=ax,
+          )
+          ax.set_title(f"Top 5 Pajak Daerah di {selected_pemda}")
+          ax.set_xlabel("Objek Pajak")
+          ax.set_ylabel("Nilai (Rp)")
+          plt.xticks(rotation=30, ha="right")
+          st.pyplot(fig)
+        else:
+          st.info("Ringkasan data pajak kosong.")
+      else:
+        st.info("Kolom objek atau data Pajak Daerah tidak ditemukan.")
     else:
-        st.info("Data PAD tidak tersedia.")
-  except Exception:
-    st.info("Grafik komponen PAD belum dapat dirender.")
+      st.info("Data wilayah tidak tersedia.")
+  except Exception as e:
+    # Menampilkan pesan error spesifik agar ketahuan bagian mana yang salah
+    st.error(f"Gagal merender grafik pajak: {str(e)}")
 
 with col2:
   st.subheader("📈 Tren Total PDRD per Tahun")
