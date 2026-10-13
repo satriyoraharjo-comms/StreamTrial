@@ -261,7 +261,7 @@ try:
             )
             elif st_type == "total_pdrd":
             # Menyamakan style background TOTAL PDRD agar sama persis dengan TOTAL PAD
-            styles.append(
+                styles.append(
                 "font-weight: bold; background-color: rgba(0, 150, 255, 0.25);"
                 " border-top: 2px solid #00aaff; color: #00aaff;"
             )
