@@ -356,7 +356,7 @@ st.markdown("---")
 col1, col2 = st.columns(2)
 
 with col1:
-  st.subheader(f"📊 Top 5 Objek Pajak Daerah {selected_pemda}")
+  st.subheader(f"📊 Kontributor Utama Pajak Daerah {selected_pemda}")
   try:
     if not df_filtered.empty:
       # Pastikan nama kolom objek map sesuai dengan kolom yang ada di dataset Anda
@@ -383,7 +383,7 @@ with col1:
         def group_pbjt_category(row):
           lv2 = str(row.get("Objek_Lv2", ""))
           if "PBJT" in lv2 or "Pajak Barang" in lv2:
-            return "PBJT (Pajak Barang dan Jasa Tertentu)"
+            return "PBJT"
           return lv2
       
         # Terapkan pengelompokan PBJT
@@ -447,12 +447,6 @@ with col1:
                   color="#333",
                   weight="bold",
               )
-
-          ax.set_title(
-              f"Top 5 Struktur Pajak Daerah di {selected_pemda}"
-              " (% Kontribusi)"
-          )
-          ax.set_xlabel("Objek Pajak")
           plt.xticks(rotation=20, ha="right", fontsize=9)
           st.pyplot(fig)
         else:
