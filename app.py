@@ -161,7 +161,7 @@ try:
         item_data = get_row_series(pajak_sub, p_item)
         pajak_rows.append(
             {
-                "Jenis / Objek PDRD (PAD)": f"**{p_item}**",
+                "Jenis / Objek PDRD (PAD)": f"{p_item}",
                 **item_data.to_dict(),
             }
         )
