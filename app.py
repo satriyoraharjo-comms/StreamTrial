@@ -143,15 +143,15 @@ with tab1:
 
           # Jika uraian jenis map mengandung kata 'PBJT' atau 'Pajak Barang Jasa Tertentu', satukan namanya
           mask_pbjt = (
-              df_pajak_processed["uraianjenismap"]
+              df_pajak_processed["Objek_Lv2"]
               .astype(str)
               .str.contains("PBJT|Barang dan Jasa Tertentu", case=False)
           )
-          df_pajak_processed.loc[mask_pbjt, "uraianjenismap"] = "PBJT"
+          df_pajak_processed.loc[mask_pbjt, "Objek_Lv2"] = "PBJT"
 
           # Groupby berdasarkan uraian yang telah disatukan
           top_pajak = (
-              df_pajak_processed.groupby("uraianjenismap")[val_col]
+              df_pajak_processed.groupby("Objek_Lv2")[val_col]
               .sum()
               .reset_index(name="total_nilai")
           )
@@ -167,7 +167,7 @@ with tab1:
 
             fig, ax = plt.subplots(figsize=(7, 4))
             bars1 = ax.bar(
-                top_pajak["uraianjenismap"],
+                top_pajak["Objek_Lv2"],
                 top_pajak["persen"],
                 color="#1b6ca8",
                 width=0.5,
@@ -385,15 +385,15 @@ with tab2:
 
           # Jika uraian jenis map mengandung kata 'PBJT' atau 'Pajak Barang Jasa Tertentu', satukan namanya
           mask_pbjt = (
-              df_pajak_processed["uraianjenismap"]
+              df_pajak_processed["Objek_Lv2"]
               .astype(str)
               .str.contains("PBJT|Barang dan Jasa Tertentu", case=False)
           )
-          df_pajak_processed.loc[mask_pbjt, "uraianjenismap"] = "PBJT"
+          df_pajak_processed.loc[mask_pbjt, "Objek_Lv2"] = "PBJT"
 
           # Groupby berdasarkan uraian yang telah disatukan
           top_pajak = (
-              df_pajak_processed.groupby("uraianjenismap")[val_col]
+              df_pajak_processed.groupby("Objek_Lv2")[val_col]
               .sum()
               .reset_index(name="total_nilai")
           )
@@ -409,7 +409,7 @@ with tab2:
 
             fig, ax = plt.subplots(figsize=(7, 4))
             bars1 = ax.bar(
-                top_pajak["uraianjenismap"],
+                top_pajak["Objek_Lv2"],
                 top_pajak["persen"],
                 color="#1b6ca8",
                 width=0.5,
@@ -640,15 +640,15 @@ with tab3:
 
           # Jika uraian jenis map mengandung kata 'PBJT' atau 'Pajak Barang Jasa Tertentu', satukan namanya
           mask_pbjt = (
-              df_pajak_processed["uraianjenismap"]
+              df_pajak_processed["Objek_Lv2"]
               .astype(str)
               .str.contains("PBJT|Barang dan Jasa Tertentu", case=False)
           )
-          df_pajak_processed.loc[mask_pbjt, "uraianjenismap"] = "PBJT"
+          df_pajak_processed.loc[mask_pbjt, "Objek_Lv2"] = "PBJT"
 
           # Groupby berdasarkan uraian yang telah disatukan
           top_pajak = (
-              df_pajak_processed.groupby("uraianjenismap")[val_col]
+              df_pajak_processed.groupby("Objek_Lv2")[val_col]
               .sum()
               .reset_index(name="total_nilai")
           )
@@ -664,7 +664,7 @@ with tab3:
 
             fig, ax = plt.subplots(figsize=(7, 4))
             bars1 = ax.bar(
-                top_pajak["uraianjenismap"],
+                top_pajak["Objek_Lv2"],
                 top_pajak["persen"],
                 color="#1b6ca8",
                 width=0.5,
