@@ -98,9 +98,7 @@ try:
       and "Tahun" in df_filtered.columns
   ):
 
-    # Memastikan seluruh rentang tahun (2021 s.d. 2026) ada
     tahun_cols = [2021, 2022, 2023, 2024, 2025, 2026]
-
     df_work = df_filtered.copy()
 
 
@@ -126,6 +124,14 @@ try:
     style_metadata = []
     current_idx = 0
 
+    # Helper aman untuk mengambil Series dari dataframe subset
+    def get_row_series(sub_df, key):
+      res = sub_df.loc[key]
+      if isinstance(res, pd.DataFrame):
+        return res.sum(axis=0)
+      return res
+
+
     # 1. PAJAK DAERAH
     pajak_data_sum = pd.Series(0.0, index=tahun_cols)
     pajak_rows = []
@@ -139,11 +145,13 @@ try:
       for idx_val in pajak_sub.index:
         lv2_name = idx_val[0] if isinstance(idx_val, tuple) else idx_val
         if is_pbjt(lv2_name):
-          pbjt_items.append(lv2_name)
+          if lv2_name not in pbjt_items:
+            pbjt_items.append(lv2_name)
         else:
-          other_pajak_items.append(lv2_name)
+          if lv2_name not in other_pajak_items:
+            other_pajak_items.append(lv2_name)
 
-      pajak_total_val = pajak_sub.sum()
+      pajak_total_val = pajak_sub.sum(axis=0)
       pajak_rows.append(
           {"Jenis / Objek PDRD (PAD)": "**Pajak Daerah**", **pajak_total_val.to_dict()}
       )
@@ -151,7 +159,7 @@ try:
       current_idx += 1
 
       for p_item in other_pajak_items:
-        item_data = pajak_sub.loc[p_item].sum()
+        item_data = get_row_series(pajak_sub, p_item)
         pajak_rows.append(
             {
                 "Jenis / Objek PDRD (PAD)": f"**{p_item}**",
@@ -165,7 +173,7 @@ try:
         pbjt_sum_val = pd.Series(0.0, index=tahun_cols)
         pbjt_sub_rows = []
         for pbjt_item in pbjt_items:
-          item_data = pajak_sub.loc[pbjt_item].sum()
+          item_data = get_row_series(pajak_sub, pbjt_item)
           pbjt_sum_val += item_data
           pbjt_sub_rows.append(
               {
@@ -188,7 +196,7 @@ try:
           style_metadata.append("italic")
           current_idx += 1
 
-      pajak_data_sum = pajak_sub.sum()
+      pajak_data_sum = pajak_sub.sum(axis=0)
 
     for r in pajak_rows:
       hierarchical_rows.append(r)
@@ -208,7 +216,7 @@ try:
 
     if "Retribusi Daerah" in grouped_raw.index.get_level_values(0):
       ret_sub = grouped_raw.loc["Retribusi Daerah"]
-      retribusi_data_sum = ret_sub.sum()
+      retribusi_data_sum = ret_sub.sum(axis=0)
 
       retribusi_rows.append(
           {"Jenis / Objek PDRD (PAD)": "**Retribusi Daerah**", **retribusi_data_sum.to_dict()}
@@ -217,7 +225,7 @@ try:
 
       for r_item in ret_sub.index:
         r_name = r_item[0] if isinstance(r_item, tuple) else r_item
-        r_data = ret_sub.loc[r_name].sum()
+        r_data = get_row_series(ret_sub, r_name)
         retribusi_rows.append(
             {
                 "Jenis / Objek PDRD (PAD)": f"\u00A0\u00A0\u00A0\u00A0{r_name}",
@@ -239,12 +247,12 @@ try:
 
     # 3. HPKPD & LLPAD
     hpkpd_sum = (
-        grouped_raw.loc["HPKPD"].sum()
+        grouped_raw.loc["HPKPD"].sum(axis=0)
         if "HPKPD" in grouped_raw.index.get_level_values(0)
         else pd.Series(0.0, index=tahun_cols)
     )
     llpad_sum = (
-        grouped_raw.loc["LLPAD"].sum()
+        grouped_raw.loc["LLPAD"].sum(axis=0)
         if "LLPAD" in grouped_raw.index.get_level_values(0)
         else pd.Series(0.0, index=tahun_cols)
     )
@@ -380,6 +388,4 @@ with col2:
     st.info("Grafik tren PDRD belum dapat dirender.")
 
 st.markdown("---")
-st.caption(
-    "💡 Dashboard PDRD Data Hub - Struktur PBJT, Sub Total, & Total PDRD."
-)
+st.caption("💡 Dashboard PDRD Data Hub - Struktur PBJT, Sub Total, & Total PDRD.")
