@@ -545,7 +545,7 @@ with col2:
           combo_df = combo_df.sort_values("Tahun")
 
           if not combo_df.empty:
-            fig, ax = plt.subplots(figsize=(8, 4.3))
+            fig, ax = plt.subplots(figsize=(8, 4.25))
 
             # Plot Bar Chart (Total PAD dalam Triliun)
             bars = ax.bar(
