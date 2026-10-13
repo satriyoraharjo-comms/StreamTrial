@@ -155,7 +155,7 @@ try:
         item_data = get_row_series(pajak_sub, p_item)
         pajak_rows.append(
             {
-                "Jenis / Objek PDRD (PAD)": f"{p_item}",
+                "Jenis PAD": f"{p_item}",
                 **item_data.to_dict(),
             }
         )
@@ -170,14 +170,14 @@ try:
           pbjt_sum_val += item_data
           pbjt_sub_rows.append(
               {
-                  "Jenis / Objek PDRD (PAD)": f"\u00A0\u00A0\u00A0\u00A0{pbjt_item}",
+                  "Jenis PAD": f"\u00A0\u00A0\u00A0\u00A0{pbjt_item}",
                   **item_data.to_dict(),
               }
           )
 
         pajak_rows.append(
             {
-                "Jenis / Objek PDRD (PAD)": "PBJT (Pajak Barang dan Jasa Tertentu)",
+                "Jenis PAD": "PBJT (Pajak Barang dan Jasa Tertentu)",
                 **pbjt_sum_val.to_dict(),
             }
         )
@@ -195,7 +195,7 @@ try:
       hierarchical_rows.append(r)
 
     subtotal_pajak_row = {
-        "Jenis / Objek PDRD (PAD)": "TOTAL PAJAK DAERAH",
+        "Jenis PAD": "TOTAL PAJAK DAERAH",
         **pajak_data_sum.to_dict(),
     }
     hierarchical_rows.append(subtotal_pajak_row)
@@ -216,7 +216,7 @@ try:
         r_data = get_row_series(ret_sub, r_name)
         retribusi_rows.append(
             {
-                "Jenis / Objek PDRD (PAD)": f"\u00A0\u00A0\u00A0\u00A0{r_name}",
+                "Jenis PAD": f"\u00A0\u00A0\u00A0\u00A0{r_name}",
                 **r_data.to_dict(),
             }
         )
@@ -227,7 +227,7 @@ try:
       style_metadata_full.append(sm)
 
     subtotal_ret_row = {
-        "Jenis / Objek PDRD (PAD)": "TOTAL RETRIBUSI DAERAH",
+        "Jenis PAD": "TOTAL RETRIBUSI DAERAH",
         **retribusi_data_sum.to_dict(),
     }
     hierarchical_rows.append(subtotal_ret_row)
@@ -247,20 +247,20 @@ try:
 
     if "HPKPD" in grouped_raw.index.get_level_values(0):
       hierarchical_rows.append(
-          {"Jenis / Objek PDRD (PAD)": "**HPKPD**", **hpkpd_sum.to_dict()}
+          {"Jenis PAD": "HPKPD", **hpkpd_sum.to_dict()}
       )
       style_metadata_full.append("header")
 
     if "LLPAD" in grouped_raw.index.get_level_values(0):
       hierarchical_rows.append(
-          {"Jenis / Objek PDRD (PAD)": "**LLPAD**", **llpad_sum.to_dict()}
+          {"Jenis PAD": "LLPAD", **llpad_sum.to_dict()}
       )
       style_metadata_full.append("header")
 
     # 4. TOTAL PDRD
     total_pdrd_sum = pajak_data_sum + retribusi_data_sum + hpkpd_sum + llpad_sum
     total_pdrd_row = {
-        "Jenis / Objek PDRD (PAD)": "**TOTAL PDRD**",
+        "Jenis PAD": "TOTAL PAD",
         **total_pdrd_sum.to_dict(),
     }
     hierarchical_rows.append(total_pdrd_row)
@@ -278,7 +278,7 @@ try:
       )
       styles = []
       for col in row.index:
-        if col == "Jenis / Objek PDRD (PAD)":
+        if col == "Jenis PAD":
           if st_type == "italic":
             styles.append("font-style: italic; color: #d0d0d0;")
           elif st_type == "subtotal":
