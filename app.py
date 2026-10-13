@@ -387,13 +387,13 @@ with col1:
           return lv2
       
         # Terapkan pengelompokan PBJT
-        df_chart["Objek_Grafik"] = df_chart.apply(
+        df_chart["Jenis Pajak Daerah"] = df_chart.apply(
             group_pbjt_category, axis=1
         )
         
         # Agregasi total nilai per objek pajak
         pajak_summary = (
-            df_chart.groupby("Objek_Grafik")["sum"].sum().reset_index()
+            df_chart.groupby("Jenis Pajak Daerah")["sum"].sum().reset_index()
         )
         
         # Hitung Total Keseluruhan Pajak Daerah untuk persentase
@@ -430,6 +430,7 @@ with col1:
           ax.spines['left'].set_visible(False)
           ax.spines['top'].set_visible(False)
           ax.spines['right'].set_visible(False)
+          ax.spines['bottom'].set_position(('value',0))
           
           for p in ax.patches:
             height = p.get_height()
