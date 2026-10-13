@@ -362,8 +362,8 @@ with col1:
       # Pastikan nama kolom objek map sesuai dengan kolom yang ada di dataset Anda
       # Cek apakah menggunakan 'standarobjekmap' atau 'Objek_Lv2'
       kolom_objek = (
-          "standarobjekmap"
-          if "standarobjekmap" in df_filtered.columns
+          "Objek_Lv2"
+          if "Objek_Lv2" in df_filtered.columns
           else "Objek_Lv2"
       )
 
@@ -393,9 +393,7 @@ with col1:
               palette="Blues_r",
               ax=ax,
           )
-          ax.set_title(f"Top 5 Pajak Daerah di {selected_pemda}")
-          ax.set_xlabel("Objek Pajak")
-          ax.set_ylabel("Nilai (Rp)")
+          ax.set_title(f"Kontributor Utama Pajak Daerah {selected_pemda}")
           plt.xticks(rotation=30, ha="right")
           st.pyplot(fig)
         else:
