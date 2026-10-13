@@ -233,6 +233,48 @@ try:
     hierarchical_rows.append(subtotal_ret_row)
     style_metadata_full.append("subtotal")
 
+# 2b. TOTAL PDRD
+    total_pdrd_sum = pajak_data_sum + retribusi_data_sum
+    total_pdrd_row = {
+        "Jenis PAD": "TOTAL PDRD",
+        **total_pdrd_sum.to_dict(),
+    }
+    hierarchical_rows.append(total_pdrd_row)
+    style_metadata_full.append("total_pdrd")
+
+    df_hierarki = pd.DataFrame(hierarchical_rows)
+
+    def style_hierarchy(row):
+      idx = row.name
+      st_type = (
+          style_metadata_full[idx]
+          if idx < len(style_metadata_full)
+          else "normal"
+      )
+      styles = []
+      for col in row.index:
+        if col == "Jenis PAD":
+          if st_type == "italic":
+            styles.append("font-style: italic; color: #d0d0d0;")
+          elif st_type == "subtotal":
+            styles.append(
+                "font-weight: bold; background-color: rgba(255, 255, 255,"
+                " 0.05); border-top: 1px solid #444;"
+            )
+          elif st_type == "total_pad":
+            styles.append(
+                "font-weight: bold; background-color: rgba(0, 150, 255, 0.15);"
+                " border-top: 2px solid #00aaff; color: #00aaff;"
+            )
+          else:
+            styles.append("font-weight: bold;")
+        else:
+          if st_type in ["subtotal", "total_pad"]:
+            styles.append("font-weight: bold;")
+          else:
+            styles.append("")
+      return styles
+
     # 3. HPKPD & LLPAD
     hpkpd_sum = (
         grouped_raw.loc["HPKPD"].sum(axis=0)
@@ -257,14 +299,14 @@ try:
       )
       style_metadata_full.append("header")
 
-    # 4. TOTAL PDRD
-    total_pdrd_sum = pajak_data_sum + retribusi_data_sum + hpkpd_sum + llpad_sum
-    total_pdrd_row = {
+    # 4. TOTAL PAD
+    total_pad_sum = pajak_data_sum + retribusi_data_sum + hpkpd_sum + llpad_sum
+    total_pad_row = {
         "Jenis PAD": "TOTAL PAD",
-        **total_pdrd_sum.to_dict(),
+        **total_pad_sum.to_dict(),
     }
-    hierarchical_rows.append(total_pdrd_row)
-    style_metadata_full.append("total_pdrd")
+    hierarchical_rows.append(total_pad_row)
+    style_metadata_full.append("total_pad")
 
     df_hierarki = pd.DataFrame(hierarchical_rows)
 
@@ -286,7 +328,7 @@ try:
                 "font-weight: bold; background-color: rgba(255, 255, 255,"
                 " 0.05); border-top: 1px solid #444;"
             )
-          elif st_type == "total_pdrd":
+          elif st_type == "total_pad":
             styles.append(
                 "font-weight: bold; background-color: rgba(0, 150, 255, 0.15);"
                 " border-top: 2px solid #00aaff; color: #00aaff;"
@@ -294,7 +336,7 @@ try:
           else:
             styles.append("font-weight: bold;")
         else:
-          if st_type in ["subtotal", "total_pdrd"]:
+          if st_type in ["subtotal", "total_pad"]:
             styles.append("font-weight: bold;")
           else:
             styles.append("")
