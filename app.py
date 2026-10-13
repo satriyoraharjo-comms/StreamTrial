@@ -464,31 +464,30 @@ with col1:
 
 with col2:
   st.markdown(
-      f"####### Peran PAD dalam Pendapatan Daerah (Triliun Rp)"
+      f"####### Peran PAD dalam Pendapatan Daerah (Miliar Rp)"
   )
   try:
     if not df_filtered.empty:
       # Agregasi data per tahun
       pad_trend = df_filtered.groupby("Tahun")["sum"].sum().reset_index()
-      pad_trend["sum_triliun"] = pad_trend["sum"] / 1e12
+      pad_trend["sum_miliar"] = pad_trend["sum"] / 1e9
 
       # Simulasi atau perhitungan garis persentase (misal: persentase pertumbuhan atau rasio terhadap total)
       # Anda bisa menyesuaikan kolom perhitungan persentase ini sesuai struktur data Anda
       if len(pad_trend) > 1:
         # Contoh: Menghitung persentase pertumbuhan tahunan (YoY) atau rasio dummy proporsional
         pad_trend["persen"] = (
-            pad_trend["sum_triliun"] / pad_trend["sum_triliun"].sum()
+            pad_trend["sum_miliar"] / pad_trend["sum_miliar"].sum()
         ) * 100
         # Menyesuaikan angka agar menyerupai visual contoh (misal berkisar 10% - 20%)
-        pad_trend["persen"] = 10 + (
-            pad_trend["sum_triliun"]
-            - pad_trend["sum_triliun"].min()
+        pad_trend["persen"] = (
+            pad_trend["sum_miliar"]
+            - pad_trend["sum_miliar"].min()
             / (
-                pad_trend["sum_triliun"].max()
-                - pad_trend["sum_triliun"].min()
+                pad_trend["sum_miliar"].max()
+                - pad_trend["sum_miliar"].min()
                 + 1e-5
             )
-            * 10
         )
       else:
         pad_trend["persen"] = [15.0] * len(pad_trend)
@@ -496,10 +495,10 @@ with col2:
       if not pad_trend.empty:
         fig, ax = plt.subplots(figsize=(8, 4))
 
-        # 1. Plot Bar Chart (Total PAD dalam Triliun)
+        # 1. Plot Bar Chart (Total PAD dalam Miliar)
         bars = ax.bar(
             pad_trend["Tahun"].astype(str),
-            pad_trend["sum_triliun"],
+            pad_trend["sum_miliar"],
             color="#1b6ca8",
             width=0.5,
             label="TOTAL PAD",
@@ -512,7 +511,7 @@ with col2:
         ax.spines["right"].set_visible(False)
 
         # Berikan batas atas sumbu Y agar ada ruang untuk label garis
-        ax.set_ylim(0, pad_trend["sum_triliun"].max() * 1.4)
+        ax.set_ylim(0, pad_trend["sum_miliar"].max() * 1.4)
 
         # Label angka di dalam/atas batang
         for bar in bars:
@@ -579,7 +578,7 @@ with col2:
 
         # Pengaturan Judul & Legenda di bawah grafik
         ax.set_title(
-            f"Peran & Tren PAD di {selected_pemda} (Triliun Rp)",
+            f"Peran & Tren PAD di {selected_pemda} (Miliar Rp)",
             fontsize=11,
             weight="bold",
             pad=15,
