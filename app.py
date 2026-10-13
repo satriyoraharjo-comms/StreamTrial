@@ -357,7 +357,9 @@ col1, col2 = st.columns(2)
 
 with col1:
   st.markdown(
-      f"##### Kontributor Utama Pajak Daerah {selected_pemda}"
+      f"<div style='text-align: center;'><h5>Kontributor Utama Pajak Daerah"
+      f"<br>{selected_pemda}</h5></div>",
+      unsafe_allow_html=True,
   )
   try:
     if not df_filtered.empty:
@@ -464,7 +466,9 @@ with col1:
 
 with col2:
   st.markdown(
-      f"##### Peran PAD dalam Pendapatan Daerah (Miliar Rp)"
+      f"<div style='text-align: center;'><h5>📈 Peran PAD dalam Pendapatan Daerah"
+      f" normal;'>(Miliar Rp)</span></h5></div>",
+      unsafe_allow_html=True,
   )
   try:
     if not df.empty:
