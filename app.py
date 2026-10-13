@@ -151,12 +151,6 @@ try:
           if lv2_name not in other_pajak_items:
             other_pajak_items.append(lv2_name)
 
-      pajak_rows.append(
-          {"Jenis / Objek PDRD (PAD)": "Pajak Daerah"}
-      )
-      style_metadata.append("header")
-      current_idx += 1
-
       for p_item in other_pajak_items:
         item_data = get_row_series(pajak_sub, p_item)
         pajak_rows.append(
