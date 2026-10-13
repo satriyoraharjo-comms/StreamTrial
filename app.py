@@ -9,7 +9,7 @@ st.set_page_config(
 )
 
 st.title("📊 PDRD Data Hub")
-st.markdown("Your One Stopn PDRD Data Insight")
+st.markdown("Your One Stop PDRD Data Insight")
 
 
 # Fungsi untuk memuat data langsung dari file Excel
@@ -70,6 +70,11 @@ filtered_pemda_df = df[df[kolom_provinsi] == selected_provinsi]
 pemda_list = sorted(filtered_pemda_df[kolom_pemda].dropna().unique())
 selected_pemda = st.sidebar.selectbox(
     "Pilih Nama Pemda / Kabupaten / Kota", options=pemda_list
+)
+
+options_pemda = ["🌐 Seluruh Wilayah (Agregat Provinsi)"] + pemda_list
+selected_pemda = st.selectbox(
+    "Pilih Nama Pemda / Kabupaten / Kota", options_pemda
 )
 
 # Filter Data Berdasarkan Pilihan User & Hanya Ambil Komponen PAD (Kode 41)
