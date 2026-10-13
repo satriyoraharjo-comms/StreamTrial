@@ -519,7 +519,7 @@ with col2:
           combo_df = pd.merge(
               df_pad_tahunan, df_pendapatan, on="Tahun", how="left"
           )
-          combo_df["sum_triliun"] = combo_df["total_pad"] / 1e12
+          combo_df["sum_triliun"] = combo_df["total_pad"] / 1e9
 
           # Menghitung persentase PAD terhadap Total Pendapatan Daerah
           combo_df["persen"] = (
@@ -535,7 +535,7 @@ with col2:
                 combo_df["Tahun"].astype(str),
                 combo_df["sum_triliun"],
                 color="#1b6ca8",
-                width=0.5,
+                width=0.75,
                 label="TOTAL PAD",
             )
 
