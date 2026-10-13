@@ -9,7 +9,7 @@ st.set_page_config(
 )
 
 st.title("📊 PDRD Data Hub")
-st.markdown("PDRD Data Insight Window - Agregat Provinsi & Pemda.")
+st.markdown("Your One Stopn PDRD Data Insight")
 
 
 # Fungsi untuk memuat data langsung dari file Excel
@@ -84,12 +84,11 @@ if "standarjenismap" in df_filtered.columns:
   ]
 
 # --- KONTEN UTAMA ---
-st.markdown(f"### 📍 Menampilkan Data PAD untuk: **{selected_pemda}**")
+st.markdown(f"### 📍 Realisasi PAD **{selected_pemda}**")
 
 # --- TABEL AGREGAT HIERARKI KUSTOM (PBJT, PAJAK, RETRIBUSI, & TOTAL PDRD) ---
 st.markdown(
-    "#### 📋 Tabel Agregat Pendapatan Asli Daerah (PAD) - Struktur Kustom"
-    " (dalam Miliar Rupiah)"
+    "#### 📋 Realisasi Per Jenis PAD 2021 s.d. TW II 2026"
 )
 try:
   if (
