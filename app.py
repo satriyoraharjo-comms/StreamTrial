@@ -477,8 +477,19 @@ with col2:
       )
       
       # 2. Hitung Total Pendapatan Daerah keseluruhan per Tahun dari seluruh baris pemda terpilih
+      df_pemda_all = df[
+        (df[kolom_provinsi] == selected_provinsi)
+        & (df[kolom_pemda] == selected_pemda)
+      ]
+      
+      df_pendapatan = (
+        df_pemda_all.groupby("Tahun")["sum"]
+        .sum()
+        .reset_index(name="total_pendapatan")
+      )
+      
       pendapatan_per_tahun = (
-          df_filtered.groupby("Tahun")["sum"]
+          df_pendapatan.groupby("Tahun")["sum"]
           .sum()
           .reset_index(name="total_pendapatan")
       )
@@ -487,7 +498,7 @@ with col2:
       combo_df = pd.merge(
           pad_per_tahun, pendapatan_per_tahun, on="Tahun", how="left"
       )
-      combo_df["sum_miliar"] = combo_df["total_pad"] / 1e12
+      combo_df["sum_miliar"] = combo_df["total_pad"] / 1e9
 
       # Menghitung persentase PAD terhadap Total Pendapatan Daerah secara akurat
       combo_df["persen"] = (
@@ -527,11 +538,11 @@ with col2:
               ha="center",
               va="bottom",
               fontsize=9,
-              color="white",
+              color="black",
               weight="bold",
               bbox=dict(
                   boxstyle="round,pad=0.2",
-                  fc="white",
+                  fc="black",
                   ec="none",
                   alpha=0.8,
               ),
@@ -582,12 +593,6 @@ with col2:
           )
 
         # Pengaturan Judul & Legenda di bawah grafik
-        ax.set_title(
-            f"Peran & Tren PAD di {selected_pemda} (Miliar Rp)",
-            fontsize=11,
-            weight="bold",
-            pad=15,
-        )
         ax.set_xlabel("")
 
         # Menggabungkan legenda dari bar dan line chart di bawah
