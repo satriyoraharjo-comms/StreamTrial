@@ -437,12 +437,14 @@ with col1:
           ax.spines['bottom'].set_visible(False)
           
           for p in ax.patches:
+           if isinstance(p, plt.Rectangle):
             height = p.get_height()
             if height > 0:
               # Mencari nilai Miliar yang sesuai dengan posisi batang saat ini
               # Menggunakan indeks patch untuk mengambil data ringkasan
+              label_text = f"{height:,.1f}%"
               ax.annotate(
-                  f"{height:.1f}%",
+                  label_text,
                   (p.get_x() + p.get_width() / 2.0, height),
                   ha="center",
                   va="center",
