@@ -128,7 +128,7 @@ with tab1:
         )
         if val_col and not df_pajak_prov.empty:
           top_pajak_prov = (
-              df_pajak_prov.groupby("uraianjenismap")[val_col]
+              df_pajak_prov.groupby("Objek_Lv2")[val_col]
               .sum()
               .reset_index(name="total_nilai")
           )
@@ -143,7 +143,7 @@ with tab1:
 
             fig, ax = plt.subplots(figsize=(7, 4))
             bars1 = ax.bar(
-                top_pajak_prov["uraianjenismap"],
+                top_pajak_prov["Objek_Lv2"],
                 top_pajak_prov["persen"],
                 color="#1b6ca8",
                 width=0.5,
@@ -348,7 +348,7 @@ with tab2:
         )
         if val_col and not df_pajak_ps.empty:
           top_pajak_ps = (
-              df_pajak_ps.groupby("uraianjenismap")[val_col]
+              df_pajak_ps.groupby("Objek_Lv2")[val_col]
               .sum()
               .reset_index(name="total_nilai")
           )
@@ -363,7 +363,7 @@ with tab2:
 
             fig, ax = plt.subplots(figsize=(7, 4))
             bars1 = ax.bar(
-                top_pajak_ps["uraianjenismap"],
+                top_pajak_ps["Objek_Lv2"],
                 top_pajak_ps["persen"],
                 color="#1b6ca8",
                 width=0.5,
@@ -574,7 +574,7 @@ with tab3:
         )
         if val_col and not df_pajak_ks.empty:
           top_pajak_ks = (
-              df_pajak_ks.groupby("uraianjenismap")[val_col]
+              df_pajak_ks.groupby("Objek_Lv2")[val_col]
               .sum()
               .reset_index(name="total_nilai")
           )
@@ -589,7 +589,7 @@ with tab3:
 
             fig, ax = plt.subplots(figsize=(7, 4))
             bars1 = ax.bar(
-                top_pajak_ks["uraianjenismap"],
+                top_pajak_ks["Objek_Lv2"],
                 top_pajak_ks["persen"],
                 color="#1b6ca8",
                 width=0.5,
