@@ -78,27 +78,68 @@ selected_pemda = st.selectbox(
 )
 
 # Logika penarikan data berdasarkan pilihan user
-if selected_pemda == "🌐 Seluruh Wilayah (Agregat Provinsi)":
-  # Agregat se-provinsi: ambil semua data yang ada di provinsi tersebut
-  df_pemda_all = df[df[kolom_provinsi] == selected_provinsi]
+st.sidebar.markdown("### 📌 Cakupan Analisis Wilayah")
+
+# 1. Menu besar pilihan cakupan (3 opsi utama)
+kategori_wilayah = st.sidebar.radio(
+    "Pilih Kategori Cakupan",
+    [
+        "1. Agregat Provinsi (Provinsi + Kab./Kota)",
+        "2. Provinsi Saja (Level Provinsi)",
+        "3. Kab./Kota Saja (Spesifik per Daerah)",
+    ],
+)
+
+st.sidebar.markdown("---")
+
+# 2. Logika filter berdasarkan menu besar yang dipilih
+if "1. Agregat" in kategori_wilayah:
+  # Pengguna memilih Agregat Provinsi (Gabungan Provinsi & Seluruh Kab/Kota di dalamnya)
+  selected_provinsi = st.sidebar.selectbox(
+      "Pilih Provinsi", sorted(df[kolom_provinsi].unique())
+  )
   display_title_wilayah = f"Provinsi {selected_provinsi} (Agregat)"
+
+  # Filter data untuk seluruh wilayah di provinsi tersebut
+  df_pemda_all = df[df[kolom_provinsi] == selected_provinsi]
+
+elif "2. Provinsi Saja" in kategori_wilayah:
+  # Pengguna memilih hanya level Provinsi
+  selected_provinsi = st.sidebar.selectbox(
+      "Pilih Provinsi", sorted(df[kolom_provinsi].unique())
+  )
+  display_title_wilayah = f"Provinsi {selected_provinsi} (Pemda Provinsi)"
+
+  # Filter data khusus yang merupakan level provinsi (biasanya ditandai kode tertentu atau nama Pemda yang sama dengan Provinsi)
+  # Sesuaikan kondisi filternya dengan kolom nama pemda di dataset Anda (contoh: jika nama pemda mengandung kata 'Provinsi' atau 'DKI JAKARTA')
+  df_pemda_all = df[
+      (df[kolom_provinsi] == selected_provinsi)
+      & (
+          df[kolom_pemda].astype(str).str.contains("Provinsi|DKI", case=False)
+      )  # Sesuaikan dengan isi data Anda
+  ]
+
 else:
-  # Filter spesifik untuk kabupaten/kota tertentu
+  # Pengguna memilih Kab./Kota Saja
+  selected_provinsi = st.sidebar.selectbox(
+      "Pilih Provinsi", sorted(df[kolom_provinsi].unique())
+  )
+
+  # Filter daftar list pemda hanya untuk Kabupaten/Kota (mengecualikan provinsi induk jika ada)
+  list_kab_kota = df[
+      (df[kolom_provinsi] == selected_provinsi)
+      & (~df[kolom_pemda].astype(str).str.contains("Provinsi|DKI", case=False))
+  ][kolom_pemda].unique()
+
+  selected_pemda = st.sidebar.selectbox(
+      "Pilih Nama Kabupaten / Kota", sorted([str(x) for x in list_kab_kota])
+  )
+  display_title_wilayah = selected_pemda
+
+  # Filter data spesifik untuk Kabupaten/Kota tersebut
   df_pemda_all = df[
       (df[kolom_provinsi] == selected_provinsi)
       & (df[kolom_pemda] == selected_pemda)
-  ]
-  display_title_wilayah = selected_pemda
-
-# Filter Data Berdasarkan Pilihan User & Hanya Ambil Komponen PAD (Kode 41)
-df_filtered = df[
-    (df[kolom_provinsi] == selected_provinsi)
-    & (df[kolom_pemda] == selected_pemda)
-]
-
-if "standarjenismap" in df_filtered.columns:
-  df_filtered = df_filtered[
-      df_filtered["standarjenismap"].astype(str).str.startswith("41")
   ]
 
 # --- KONTEN UTAMA ---
