@@ -437,14 +437,12 @@ with col1:
           ax.spines['bottom'].set_visible(False)
           
           for p in ax.patches:
-           if isinstance(p, plt.Rectangle):
             height = p.get_height()
             if height > 0:
               # Mencari nilai Miliar yang sesuai dengan posisi batang saat ini
               # Menggunakan indeks patch untuk mengambil data ringkasan
-              label_text = f"{height:,.1f}%"
               ax.annotate(
-                  label_text,
+                  f"{height:.1f}%",
                   (p.get_x() + p.get_width() / 2.0, height),
                   ha="center",
                   va="center",
@@ -552,17 +550,23 @@ with col2:
             for bar in bars:
               yval = bar.get_height()
               if yval > 0:
-                ax.annotate(
-                    f"{yval:.2f}",
-                    xy=(bar.get_x() + bar.get_width() / 2, 0),
-                    xytext=(0, 8),
-                    textcoords="offset points",
-                    ha="center",
-                    va="bottom",
-                    fontsize=9,
-                    color="white",
-                    weight="bold",
+                  temp_str = f"{yval:,.2f}"
+                  formatted_val = (
+                  temp_str.replace(",", "TEMP")
+                  .replace(".", ",")
+                  .replace("TEMP", ".")
                 )
+            ax.annotate(
+                formatted_val,
+                  xy=(bar.get_x() + bar.get_width() / 2, 0),
+                  xytext=(0, 8),
+                  textcoords="offset points",
+                  ha="center",
+                  va="bottom",
+                  fontsize=9,
+                  color="white",
+                  weight="bold",
+              )
 
             # Sumbu kembar untuk Line Chart (% Rasio PAD terhadap Pendapatan)
             ax2 = ax.twinx()
