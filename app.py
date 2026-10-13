@@ -420,7 +420,7 @@ with col1:
           # Membuat grafik batang berdasarkan persentase
           sns.barplot(
               data=pajak_summary,
-              x="Objek_Grafik",
+              x="Jenis Pajak Daerah",
               y="persentase",
               palette="Blues_r",
               ax=ax,
