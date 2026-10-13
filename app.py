@@ -151,9 +151,8 @@ try:
           if lv2_name not in other_pajak_items:
             other_pajak_items.append(lv2_name)
 
-      pajak_total_val = pajak_sub.sum(axis=0)
       pajak_rows.append(
-          {"Jenis / Objek PDRD (PAD)": "**Pajak Daerah**", **pajak_total_val.to_dict()}
+          {"Jenis / Objek PDRD (PAD)": "Pajak Daerah"}
       )
       style_metadata.append("header")
       current_idx += 1
@@ -184,7 +183,7 @@ try:
 
         pajak_rows.append(
             {
-                "Jenis / Objek PDRD (PAD)": "**PBJT (Pajak Barang dan Jasa Tertentu)**",
+                "Jenis / Objek PDRD (PAD)": "PBJT (Pajak Barang dan Jasa Tertentu)",
                 **pbjt_sum_val.to_dict(),
             }
         )
@@ -202,7 +201,7 @@ try:
       hierarchical_rows.append(r)
 
     subtotal_pajak_row = {
-        "Jenis / Objek PDRD (PAD)": "**SUB TOTAL PAJAK DAERAH**",
+        "Jenis / Objek PDRD (PAD)": "SUB TOTAL PAJAK DAERAH",
         **pajak_data_sum.to_dict(),
     }
     hierarchical_rows.append(subtotal_pajak_row)
