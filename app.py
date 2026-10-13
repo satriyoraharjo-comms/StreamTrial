@@ -77,6 +77,19 @@ selected_pemda = st.selectbox(
     "Pilih Nama Pemda / Kabupaten / Kota", options_pemda
 )
 
+# Logika penarikan data berdasarkan pilihan user
+if selected_pemda == "🌐 Seluruh Wilayah (Agregat Provinsi)":
+  # Agregat se-provinsi: ambil semua data yang ada di provinsi tersebut
+  df_pemda_all = df[df[kolom_provinsi] == selected_provinsi]
+  display_title_wilayah = f"Provinsi {selected_provinsi} (Agregat)"
+else:
+  # Filter spesifik untuk kabupaten/kota tertentu
+  df_pemda_all = df[
+      (df[kolom_provinsi] == selected_provinsi)
+      & (df[kolom_pemda] == selected_pemda)
+  ]
+  display_title_wilayah = selected_pemda
+
 # Filter Data Berdasarkan Pilihan User & Hanya Ambil Komponen PAD (Kode 41)
 df_filtered = df[
     (df[kolom_provinsi] == selected_provinsi)
@@ -424,7 +437,7 @@ with col1:
         ).head(5)
 
         if not pajak_summary.empty:
-          fig, ax = plt.subplots(figsize=(8, 4))
+          fig, ax = plt.subplots(figsize=(8, 5))
           # Membuat grafik batang berdasarkan persentase
           sns.barplot(
               data=pajak_summary,
@@ -532,7 +545,7 @@ with col2:
           combo_df = combo_df.sort_values("Tahun")
 
           if not combo_df.empty:
-            fig, ax = plt.subplots(figsize=(8, 4))
+            fig, ax = plt.subplots(figsize=(8, 5))
 
             # Plot Bar Chart (Total PAD dalam Triliun)
             bars = ax.bar(
