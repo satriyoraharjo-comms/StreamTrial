@@ -447,7 +447,7 @@ with col1:
                   color="#333",
                   weight="bold",
               )
-          plt.xticks(rotation=20, ha="right", fontsize=9)
+          plt.xticks(rotation=0, ha="right", fontsize=9)
           st.pyplot(fig)
         else:
           st.info("Ringkasan data pajak kosong.")
