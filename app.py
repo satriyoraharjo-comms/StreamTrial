@@ -251,34 +251,34 @@ try:
          )
         styles = []
         for col in row.index:
-        if col == "Jenis PAD":
-            if st_type == "italic":
-            styles.append("font-style: italic; color: #d0d0d0;")
-        elif st_type == "subtotal":
-            styles.append(
-            "font-weight: bold; background-color: rgba(255, 255, 255, 0.05);"
-            " border-top: 1px solid #444;"
+            if col == "Jenis PAD":
+                if st_type == "italic":
+                styles.append("font-style: italic; color: #d0d0d0;")
+            elif st_type == "subtotal":
+                styles.append(
+                "font-weight: bold; background-color: rgba(255, 255, 255, 0.05);"
+                " border-top: 1px solid #444;"
         )
-        elif st_type == "total_pdrd":
-            styles.append(
-            "font-weight: bold; background-color: rgba(0, 150, 255, 0.25);"
-            " border-top: 2px solid #00aaff; color: #00aaff;"
+            elif st_type == "total_pdrd":
+                styles.append(
+                "font-weight: bold; background-color: rgba(0, 150, 255, 0.25);"
+                " border-top: 2px solid #00aaff; color: #00aaff;"
         )
-        else:
-            styles.append("font-weight: bold;")
-        else:
-        if st_type == "total_pdrd":
-            styles.append(
-            "font-weight: bold; background-color: rgba(0, 150, 255, 0.25);"
-            " color: #00aaff;"
+            else:
+                styles.append("font-weight: bold;")
+            else:
+            if st_type == "total_pdrd":
+                styles.append(
+                "font-weight: bold; background-color: rgba(0, 150, 255, 0.25);"
+                " color: #00aaff;"
         )
-        elif st_type == "subtotal":
-         styles.append(
-            "font-weight: bold; background-color: rgba(255, 255, 255, 0.05);"
+            elif st_type == "subtotal":
+                styles.append(
+                "font-weight: bold; background-color: rgba(255, 255, 255, 0.05);"
         )
-        else:
-            styles.append("")
-     return styles
+            else:
+                styles.append("")
+        return styles
 
     # 3. HPKPD & LLPAD
     hpkpd_sum = (
