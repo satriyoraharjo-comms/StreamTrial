@@ -468,39 +468,42 @@ with col2:
   )
   try:
     if not df_filtered.empty:
-      # Agregasi data per tahun
-      pad_trend = df_filtered.groupby("Tahun")["sum"].sum().reset_index()
-      pad_trend["sum_miliar"] = pad_trend["sum"] / 1e9
+      # 1. Hitung Total PAD per Tahun (Komponen berawalan kode '41' atau Objek PAD)
+      df_pad = df_filtered[
+          df_filtered["standarjenismap"].astype(str).str.startswith("41")
+      ]
+      pad_per_tahun = (
+          df_pad.groupby("Tahun")["sum"].sum().reset_index(name="total_pad")
+      )
+      
+      # 2. Hitung Total Pendapatan Daerah keseluruhan per Tahun dari seluruh baris pemda terpilih
+      pendapatan_per_tahun = (
+          df_filtered.groupby("Tahun")["sum"]
+          .sum()
+          .reset_index(name="total_pendapatan")
+      )
 
-      # Simulasi atau perhitungan garis persentase (misal: persentase pertumbuhan atau rasio terhadap total)
-      # Anda bisa menyesuaikan kolom perhitungan persentase ini sesuai struktur data Anda
-      if len(pad_trend) > 1:
-        # Contoh: Menghitung persentase pertumbuhan tahunan (YoY) atau rasio dummy proporsional
-        pad_trend["persen"] = (
-            pad_trend["sum_miliar"] / pad_trend["sum_miliar"].sum()
-        ) * 100
-        # Menyesuaikan angka agar menyerupai visual contoh (misal berkisar 10% - 20%)
-        pad_trend["persen"] = (
-            pad_trend["sum_miliar"]
-            - pad_trend["sum_miliar"].min()
-            / (
-                pad_trend["sum_miliar"].max()
-                - pad_trend["sum_miliar"].min()
-                + 1e-5
-            )
-        )
-      else:
-        pad_trend["persen"] = [15.0] * len(pad_trend)
+      # 3. Gabungkan data untuk menghitung persentase (% PAD terhadap Total Pendapatan)
+      combo_df = pd.merge(
+          pad_per_tahun, pendapatan_per_tahun, on="Tahun", how="left"
+      )
+      combo_df["sum_triliun"] = combo_df["total_pad"] / 1e12
 
-      if not pad_trend.empty:
+      # Menghitung persentase PAD terhadap Total Pendapatan Daerah secara akurat
+      combo_df["persen"] = (
+          combo_df["total_pad"] / combo_df["total_pendapatan"]
+      ) * 100
+      combo_df = combo_df.sort_values("Tahun")
+
+      if not combo_df.empty:
         fig, ax = plt.subplots(figsize=(8, 4))
 
         # 1. Plot Bar Chart (Total PAD dalam Miliar)
         bars = ax.bar(
-            pad_trend["Tahun"].astype(str),
-            pad_trend["sum_miliar"],
+            combo_df["Tahun"].astype(str),
+            combo_df["sum_miliar"],
             color="#1b6ca8",
-            width=0.5,
+            width=0.75,
             label="TOTAL PAD",
         )
 
@@ -511,20 +514,20 @@ with col2:
         ax.spines["right"].set_visible(False)
 
         # Berikan batas atas sumbu Y agar ada ruang untuk label garis
-        ax.set_ylim(0, pad_trend["sum_miliar"].max() * 1.4)
+        ax.set_ylim(0, combo_df["sum_miliar"].max() * 1.4)
 
         # Label angka di dalam/atas batang
         for bar in bars:
           yval = bar.get_height()
           ax.annotate(
               f"{yval:.2f}",
-              xy=(bar.get_x() + bar.get_width() / 2, yval),
-              xytext=(0, 5),  # offset 5 poin ke atas
+              xy=(bar.get_x() + bar.get_width() / 2, 0),
+              xytext=(0, 8),  # offset 8 poin ke atas
               textcoords="offset points",
               ha="center",
               va="bottom",
               fontsize=9,
-              color="#333",
+              color="white",
               weight="bold",
               bbox=dict(
                   boxstyle="round,pad=0.2",
@@ -536,17 +539,19 @@ with col2:
 
         # 2. Sumbu Kembar (Twin X) untuk Line Chart (% Persentase)
         ax2 = ax.twinx()
-        ax2.get_yaxis().set_visible(False)  # Sembunyikan sumbu Y garis
+        ax2.get_yaxis().set_visible(False)
         ax2.spines["top"].set_visible(False)
         ax2.spines["right"].set_visible(False)
         ax2.spines["left"].set_visible(False)
         ax2.spines["bottom"].set_visible(False)
-        ax2.set_ylim(0, pad_trend["persen"].max() * 1.5)
+        ax2.set_ylim(
+            0, max(combo_df["persen"].max() * 1.5, 30)
+        )
 
         # Plot garis tren persentase
         line = ax2.plot(
-            pad_trend["Tahun"].astype(str),
-            pad_trend["persen"],
+            combo_df["Tahun"].astype(str),
+            combo_df["persen"],
             color="#f26419",
             linewidth=2.5,
             marker="o",
@@ -556,7 +561,7 @@ with col2:
 
         # Label angka di atas titik garis
         for x, y in zip(
-            pad_trend["Tahun"].astype(str), pad_trend["persen"]
+            combo_df["Tahun"].astype(str), combo_df["persen"]
         ):
           ax2.annotate(
               f"{y:.2f}%",
