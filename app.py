@@ -356,7 +356,9 @@ st.markdown("---")
 col1, col2 = st.columns(2)
 
 with col1:
-  st.subheader(f"📊 Kontributor Utama Pajak Daerah {selected_pemda}")
+  st.markdown(
+      f"##### 📊 Kontributor Utama Pajak Daerah {selected_pemda}"
+  )
   try:
     if not df_filtered.empty:
       # Pastikan nama kolom objek map sesuai dengan kolom yang ada di dataset Anda
@@ -461,7 +463,9 @@ with col1:
     st.error(f"Gagal merender grafik pajak: {str(e)}")
 
 with col2:
-  st.subheader("📊 Peran PAD dalam Pendapatan Daerah (Triliun Rp)")
+  st.markdown(
+      f"##### 📊 Peran PAD dalam Pendapatan Daerah (Triliun Rp)"
+  )
   try:
     if not df_filtered.empty:
       # Agregasi data per tahun
