@@ -430,7 +430,7 @@ with col1:
           ax.spines['left'].set_visible(False)
           ax.spines['top'].set_visible(False)
           ax.spines['right'].set_visible(False)
-          ax.spines['bottom'].set_position(False)
+          ax.spines['bottom'].set_visible(False)
           
           for p in ax.patches:
             height = p.get_height()
