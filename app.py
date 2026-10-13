@@ -387,13 +387,13 @@ with col1:
           return lv2
       
         # Terapkan pengelompokan PBJT
-        df_chart["Jenis Pajak Daerah"] = df_chart.apply(
+        df_chart[""] = df_chart.apply(
             group_pbjt_category, axis=1
         )
         
         # Agregasi total nilai per objek pajak
         pajak_summary = (
-            df_chart.groupby("Jenis Pajak Daerah")["sum"].sum().reset_index()
+            df_chart.groupby("")["sum"].sum().reset_index()
         )
         
         # Hitung Total Keseluruhan Pajak Daerah untuk persentase
@@ -420,7 +420,7 @@ with col1:
           # Membuat grafik batang berdasarkan persentase
           sns.barplot(
               data=pajak_summary,
-              x="Jenis Pajak Daerah",
+              x="",
               y="persentase",
               palette="Blues_r",
               ax=ax,
