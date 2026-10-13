@@ -40,8 +40,8 @@ try:
   df = load_data()
 except Exception as e:
   st.error(
-      "Gagal memuat file Excel. Pastikan file Excel sudah di-upload ke"
-      f" GitHub.\nError: {e}"
+      "Gagal memuat file Excel. Pastikan file Excel dan openpyxl sudah"
+      f" terinstal.\nError: {e}"
   )
   st.stop()
 
@@ -86,9 +86,9 @@ if "standarjenismap" in df_filtered.columns:
 # --- KONTEN UTAMA ---
 st.markdown(f"### 📍 Menampilkan Data PAD untuk: **{selected_pemda}**")
 
-# --- TABEL AGREGAT HIERARKI DENGAN URUTAN KHUSUS ---
+# --- TABEL AGREGAT HIERARKI KUSTOM (PBJT, PAJAK, RETRIBUSI, & TOTAL PDRD) ---
 st.markdown(
-    "#### 📋 Tabel Agregat Pendapatan Asli Daerah (PAD) - Hierarki Khusus"
+    "#### 📋 Tabel Agregat Pendapatan Asli Daerah (PAD) - Struktur Kustom"
     " (dalam Miliar Rupiah)"
 )
 try:
@@ -98,81 +98,245 @@ try:
       and "Tahun" in df_filtered.columns
   ):
 
-    # 1. Agregasi berdasarkan Lv1 dan Lv2 terhadap Tahun
-    grouped = (
-        df_filtered.groupby(["Objek_Lv1", "Objek_Lv2", "Tahun"])["sum"]
+    # Memastikan seluruh rentang tahun (2021 s.d. 2026) ada
+    tahun_cols = [2021, 2022, 2023, 2024, 2025, 2026]
+
+    # Salin dataframe khusus untuk dimanipulasi
+    df_work = df_filtered.copy()
+
+
+    # Fungsi helper untuk mendeteksi apakah objek termasuk PBJT
+    def is_pbjt(val):
+      if pd.isna(val):
+        return False
+      return "PBJT" in str(val) or "Pajak Barang" in str(val)
+
+
+    # Pisahkan atau tandai PBJT di Objek_Lv2 jika masuk ke dalam Pajak Daerah (Objek_Lv1 == 'Pajak Daerah')
+    # Kita buat kolom baru untuk kategori tampilan kustom
+    def categorize_custom(row):
+      lv1 = str(row.get("Objek_Lv1", ""))
+      lv2 = str(row.get("Objek_Lv2", ""))
+      if "Pajak Daerah" in lv1:
+        if "PBJT" in lv2 or "Barang dan Jasa Tertentu" in lv2:
+          return "PBJT (Pajak Barang dan Jasa Tertentu)"
+        else:
+          return lv2  # Sub-pajak lainnya (seperti PBB-P2, BPHTB, dll)
+      elif "Retribusi Daerah" in lv1:
+        return lv2
+      else:
+        return lv1
+
+
+    # Agregasi data berdasarkan kategori kustom dan tahun
+    # Kita kelompokkan berdasarkan Pajak Daerah / Retribusi Daerah dulu
+    grouped_raw = (
+        df_work.groupby(["Objek_Lv1", "Objek_Lv2", "Tahun"])["sum"]
         .sum()
         .unstack(fill_value=0)
         / 1e9
     )
 
-    # Memastikan seluruh rentang tahun (2021 s.d. 2026) ada
-    for thn in [2021, 2022, 2023, 2024, 2025, 2026]:
-      if thn not in grouped.columns:
-        grouped[thn] = 0.0
+    for thn in tahun_cols:
+      if thn not in grouped_raw.columns:
+        grouped_raw[thn] = 0.0
+    grouped_raw = grouped_raw[tahun_cols]
 
-    tahun_cols = [
-        c for c in [2021, 2022, 2023, 2024, 2025, 2026] if c in grouped.columns
-    ]
-    grouped = grouped[tahun_cols]
-
-    # 2. Urutan prioritas Objek_Lv1 yang diinginkan
-    desired_order = ["Pajak Daerah", "Retribusi Daerah", "HPKPD", "LLPAD"]
-
-    # Ambil daftar Objek_Lv1 yang benar-benar ada di data saat ini
-    available_lv1 = [
-        lv1 for lv1 in desired_order if lv1 in grouped.index.get_level_values(0)
-    ]
-    # Tambahkan elemen lain jika ada di luar daftar prioritas di atas
-    for lv1 in grouped.index.get_level_values(0).unique():
-      if lv1 not in available_lv1:
-        available_lv1.append(lv1)
-
-    # 3. Menyusun baris hirarki sesuai urutan & aturan tampilan Lv2
+    # Menyusun baris tabel akhir secara manual sesuai permintaan
     hierarchical_rows = []
-    italic_rows_indices = []
+    style_metadata = (
+        []
+    )  # Menyimpan informasi tipe baris untuk styling (bold/italic/subtotal)
     current_idx = 0
 
-    for lv1 in available_lv1:
-      # Baris Total / Agregat Objek_Lv1 (Bold)
-      lv1_data = grouped.loc[lv1].sum()
-      lv1_row = {"Jenis / Objek PDRD (PAD)": f"**{lv1}**"}
-      for thn in tahun_cols:
-        lv1_row[thn] = lv1_data[thn]
-      hierarchical_rows.append(lv1_row)
+    # 1. PAJAK DAERAH
+    pajak_data_sum = pd.Series(0.0, index=tahun_cols)
+    pajak_rows = []
+
+    if "Pajak Daerah" in grouped_raw.index.get_level_values(0):
+      pajak_sub = grouped_raw.loc["Pajak Daerah"]
+
+      # Pisahkan PBJT dan Pajak Lainnya
+      pbjt_items = []
+      other_pajak_items = []
+
+      for idx_val in pajak_sub.index:
+        lv2_name = idx_val[0] if isinstance(idx_val, tuple) else idx_val
+        if is_pbjt(lv2_name):
+          pbjt_items.append(lv2_name)
+        else:
+          other_pajak_items.append(lv2_name)
+
+      # Baris Header Utama: Pajak Daerah
+      pajak_total_val = pajak_sub.sum()
+      pajak_rows.append(
+          {"Jenis / Objek PDRD (PAD)": "**Pajak Daerah**", **pajak_total_val.to_dict()}
+      )
+      style_metadata.append("header")
       current_idx += 1
 
-      # Jika Lv1 adalah HPKPD atau LLPAD, jangan tampilkan rincian Objek_Lv2-nya
-      if lv1 in ["HPKPD", "LLPAD"]:
-        continue
-
-      # Baris Rincian Objek_Lv2 untuk Pajak Daerah & Retribusi Daerah (Menjorok & Italic)
-      lv2_sub = grouped.loc[lv1]
-      for lv2 in lv2_sub.index:
-        lv2_data = lv2_sub.loc[lv2]
-        indent_name = f"\u00A0\u00A0\u00A0\u00A0{lv2}"
-        lv2_row = {"Jenis / Objek PDRD (PAD)": indent_name}
-        for thn in tahun_cols:
-          lv2_row[thn] = lv2_data[thn]
-        hierarchical_rows.append(lv2_row)
-
-        italic_rows_indices.append(current_idx)
+      # Pajak Lainnya (seperti PBB-P2, BPHTB, dll) beserta rincian Lv2-nya
+      for p_item in other_pajak_items:
+        item_data = pajak_sub.loc[p_item].sum()
+        pajak_rows.append(
+            {
+                "Jenis / Objek PDRD (PAD)": f"**{p_item}**",
+                **item_data.to_dict(),
+            }
+        )
+        style_metadata.append("sub_header")
         current_idx += 1
+
+      # Kelompok PBJT (Memiliki total PBJT dan rincian di bawahnya)
+      if pbjt_items:
+        pbjt_sum_val = pd.Series(0.0, index=tahun_cols)
+        pbjt_sub_rows = []
+        for pbjt_item in pbjt_items:
+          item_data = pajak_sub.loc[pbjt_item].sum()
+          pbjt_sum_val += item_data
+          pbjt_sub_rows.append(
+              {
+                  "Jenis / Objek PDRD (PAD)": f"\u00A0\u00A0\u00A0\u00A0{pbjt_item}",
+                  **item_data.to_dict(),
+              }
+          )
+
+        # Baris Total PBJT (setara dengan PBB-P2, BPHTB)
+        pajak_rows.append(
+            {
+                "Jenis / Objek PDRD (PAD)": "**PBJT (Pajak Barang dan Jasa Tertentu)**",
+                **pbjt_sum_val.to_dict(),
+            }
+        )
+        style_metadata.append("sub_header")
+        current_idx += 1
+
+        # Masukkan rincian sub-PBJT (Hotel, Listrik, dll) dengan format italic
+        for sub_r in pbjt_sub_rows:
+          pajak_rows.append(sub_r)
+          style_metadata.append("italic")
+          current_idx += 1
+
+      pajak_data_sum = pajak_sub.sum()
+
+    # Tambahkan baris Pajak ke tabel utama
+    for r, sm in zip(pajak_rows, style_metadata):
+      hierarchical_rows.append(r)
+      # Simpan metadata style
+
+    # Baris Sub Total Pajak Daerah
+    subtotal_pajak_row = {
+        "Jenis / Objek PDRD (PAD)": "**SUB TOTAL PAJAK DAERAH**",
+        **pajak_data_sum.to_dict(),
+    }
+    hierarchical_rows.append(subtotal_pajak_row)
+    style_metadata_full = style_metadata + ["subtotal"]
+    current_idx += 1
+
+    # 2. RETRIBUSI DAERAH
+    retribusi_data_sum = pd.Series(0.0, index=tahun_cols)
+    retribusi_rows = []
+    retribusi_style = []
+
+    if "Retribusi Daerah" in grouped_raw.index.get_level_values(0):
+      ret_sub = grouped_raw.loc["Retribusi Daerah"]
+      retribusi_data_sum = ret_sub.sum()
+
+      # Header Retribusi Daerah
+      retribusi_rows.append(
+          {"Jenis / Objek PDRD (PAD)": "**Retribusi Daerah**", **retribusi_data_sum.to_dict()}
+      )
+      retribusi_style.append("header")
+
+      for r_item in ret_sub.index:
+        r_name = r_item[0] if isinstance(r_item, tuple) else r_item
+        r_data = ret_sub.loc[r_name].sum()
+        retribusi_rows.append(
+            {
+                "Jenis / Objek PDRD (PAD)": f"\u00A0\u00A0\u00A0\u00A0{r_name}",
+                **r_data.to_dict(),
+            }
+        )
+        retribusi_style.append("italic")
+
+    for r, sm in zip(retribusi_rows, retribusi_style):
+      hierarchical_rows.append(r)
+      style_metadata_full.append(sm)
+
+    # Baris Sub Total Retribusi Daerah
+    subtotal_ret_row = {
+        "Jenis / Objek PDRD (PAD)": "**SUB TOTAL RETRIBUSI DAERAH**",
+        **retribusi_data_sum.to_dict(),
+    }
+    hierarchical_rows.append(subtotal_ret_row)
+    style_metadata_full.append("subtotal")
+
+    # 3. HPKPD & LLPAD (Tanpa rincian Lv2)
+    hpkpd_sum = (
+        grouped_raw.loc["HPKPD"].sum()
+        if "HPKPD" in grouped_raw.index.get_level_values(0)
+        else pd.Series(0.0, index=tahun_cols)
+    )
+    llpad_sum = (
+        grouped_raw.loc["LLPAD"].sum()
+        if "LLPAD" in grouped_raw.index.get_level_values(0)
+        else pd.Series(0.0, index=tahun_cols)
+    )
+
+    if "HPKPD" in grouped_raw.index.get_level_values(0):
+      hierarchical_rows.append(
+          {"Jenis / Objek PDRD (PAD)": "**HPKPD**", **hpkpd_sum.to_dict()}
+      )
+      style_metadata_full.append("header")
+
+    if "LLPAD" in grouped_raw.index.get_level_values(0):
+      hierarchical_rows.append(
+          {"Jenis / Objek PDRD (PAD)": "**LLPAD**", **llpad_sum.to_dict()}
+      )
+      style_metadata_full.append("header")
+
+    # 4. TOTAL PDRD (Penjumlahan seluruh komponen PAD)
+    total_pdrd_sum = pajak_data_sum + retribusi_data_sum + hpkpd_sum + llpad_sum
+    total_pdrd_row = {
+        "Jenis / Objek PDRD (PAD)": "**TOTAL PDRD**",
+        **total_pdrd_sum.to_dict(),
+    }
+    hierarchical_rows.append(total_pdrd_row)
+    style_metadata_full.append("total_pdrd")
 
     df_hierarki = pd.DataFrame(hierarchical_rows)
 
 
-    # Fungsi styling CSS untuk baris Level 2
+    # Styling CSS Baris Tabel
     def style_hierarchy(row):
-      is_italic = row.name in italic_rows_indices
+      idx = row.name
+      st_type = (
+          style_metadata_full[idx]
+          if idx < len(style_metadata_full)
+          else "normal"
+      )
       styles = []
       for col in row.index:
-        if is_italic and col == "Jenis / Objek PDRD (PAD)":
-          styles.append("font-style: italic; color: #d0d0d0;")
-        elif not is_italic and col == "Jenis / Objek PDRD (PAD)":
-          styles.append("font-weight: bold;")
+        if col == "Jenis / Objek PDRD (PAD)":
+          if st_type == "italic":
+            styles.append("font-style: italic; color: #d0d0d0;")
+          elif st_type == "subtotal":
+            styles.append(
+                "font-weight: bold; background-color: rgba(255, 255, 255,"
+                " 0.05); border-top: 1px solid #444;"
+            )
+          elif st_type == "total_pdrd":
+            styles.append(
+                "font-weight: bold; background-color: rgba(0, 150, 255, 0.15);"
+                " border-top: 2px solid #00aaff; color: #00aaff;"
+            )
+          else:
+            styles.append("font-weight: bold;")
         else:
-          styles.append("")
+          if st_type in ["subtotal", "total_pdrd"]:
+            styles.append("font-weight: bold;")
+          else:
+            styles.append("")
       return styles
 
 
@@ -184,10 +348,7 @@ try:
     else:
       st.warning("Tidak ada data PAD untuk kombinasi wilayah tersebut.")
   else:
-    st.error(
-        "Kolom 'Objek_Lv1', 'Objek_Lv2', atau 'Tahun' tidak ditemukan di"
-        " dataset."
-    )
+    st.error("Kolom yang diperlukan tidak ditemukan di dataset.")
     st.dataframe(df_filtered.head())
 
 except Exception as err:
@@ -199,11 +360,11 @@ st.markdown("---")
 col1, col2 = st.columns(2)
 
 with col1:
-  st.subheader("📊 Top 5 Objek Pajak/Retribusi PAD")
+  st.subheader("📊 Top 5 Komponen PAD")
   try:
     if not df_filtered.empty:
       pajak_summary = (
-          df_filtered.groupby("Objek_Lv2")["sum"].sum().reset_index()
+          df_filtered.groupby("standarobjekmap")["sum"].sum().reset_index()
       )
       pajak_summary = pajak_summary.sort_values(by="sum", ascending=False).head(
           5
@@ -212,13 +373,13 @@ with col1:
       fig, ax = plt.subplots(figsize=(8, 4))
       sns.barplot(
           data=pajak_summary,
-          x="Objek_Lv2",
+          x="standarobjekmap",
           y="sum",
           palette="Blues_r",
           ax=ax,
       )
-      ax.set_title(f"Top 5 Komponen PAD di {selected_pemda}")
-      ax.set_xlabel("Jenis Pajak Daerah")
+      ax.set_title(f"Top 5 Komponen di {selected_pemda}")
+      ax.set_xlabel("Objek Map")
       ax.set_ylabel("Nilai (Rp)")
       plt.xticks(rotation=30, ha="right")
       st.pyplot(fig)
@@ -228,7 +389,7 @@ with col1:
     st.info("Grafik komponen PAD belum dapat dirender.")
 
 with col2:
-  st.subheader("📈 Tren Total PAD per Tahun")
+  st.subheader("📈 Tren Total PDRD per Tahun")
   try:
     if not df_filtered.empty:
       pad_trend = df_filtered.groupby("Tahun")["sum"].sum().reset_index()
@@ -244,16 +405,17 @@ with col2:
           linewidth=2.5,
           ax=ax,
       )
-      ax.set_title("Tren Pertumbuhan PAD")
+      ax.set_title("Tren Pertumbuhan PDRD")
       ax.set_xlabel("Tahun")
-      ax.set_ylabel("Total PAD (Triliun Rp)")
+      ax.set_ylabel("Total PDRD (Triliun Rp)")
       st.pyplot(fig)
     else:
-      st.info("Data tren PAD tidak tersedia.")
+      st.info("Data tren PDRD tidak tersedia.")
+  export_except = None
   except Exception:
-    st.info("Grafik tren PAD belum dapat dirender.")
+    st.info("Grafik tren PDRD belum dapat dirender.")
 
 st.markdown("---")
 st.caption(
-    "💡 Dashboard PDRD Data Hub - Urutan Kustom & Penyembunyian Lv2 HPKPD/LLPAD."
+    "💡 Dashboard PDRD Data Hub - Struktur PBJT, Sub Total, & Total PDRD."
 )
