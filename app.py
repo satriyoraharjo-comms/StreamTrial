@@ -356,7 +356,7 @@ st.markdown("---")
 col1, col2 = st.columns(2)
 
 with col1:
-  st.subheader("📊 Top 5 Objek Pajak Daerah")
+  st.subheader(f"📊 Top 5 Objek Pajak Daerah {selected_pemda}")
   try:
     if not df_filtered.empty:
       # Pastikan nama kolom objek map sesuai dengan kolom yang ada di dataset Anda
@@ -393,7 +393,21 @@ with col1:
               palette="Blues_r",
               ax=ax,
           )
-          ax.set_title(f"Kontributor Utama Pajak Daerah {selected_pemda}")
+          
+          ax.get_yaxis().set_visible(False)
+          ax.spines['left'].set_visible(False)
+          ax.spines['top'].set_visible(False)
+          ax.spines['right'].set_visible(False)
+          
+          for p in ax.patches:
+              ax.annotate(
+                  f"{p.get_height():.2f} M", # Format: 2 desimal + "M"
+                  (p.get_x() + p.get_width() / 2., p.get_height()),
+                  ha='center', va='center',
+                  xytext=(0, 7), # Jarak label ke atas batang
+                  textcoords='offset points',
+                  fontsize=9, color='#444' # Ukuran dan warna teks label
+              )
           plt.xticks(rotation=30, ha="right")
           st.pyplot(fig)
         else:
