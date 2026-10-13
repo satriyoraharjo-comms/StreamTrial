@@ -550,23 +550,25 @@ with col2:
             for bar in bars:
               yval = bar.get_height()
               if yval > 0:
-                  temp_str = f"{yval:,.2f}"
-                  formatted_val = (
-                  temp_str.replace(",", "TEMP")
-                  .replace(".", ",")
-                  .replace("TEMP", ".")
+                temp_str = f"{yval:,.2f}"
+                formatted_val = (
+                    temp_str.replace(",", "TEMP")
+                    .replace(".", ",")
+                    .replace("TEMP", ".")
                 )
-            ax.annotate(
-                formatted_val,
-                  xy=(bar.get_x() + bar.get_width() / 2, 0),
-                  xytext=(0, 8),
-                  textcoords="offset points",
-                  ha="center",
-                  va="bottom",
-                  fontsize=9,
-                  color="white",
-                  weight="bold",
-              )
+
+                ax.annotate(
+                    formatted_val,
+                    # Menggunakan posisi 5% dari tinggi batang sebagai titik acuan agar aman di dalam batang
+                    xy=(bar.get_x() + bar.get_width() / 2, yval * 0.05),
+                    xytext=(0, 0),
+                    textcoords="offset points",
+                    ha="center",
+                    va="bottom",
+                    fontsize=9,
+                    color="white",
+                    weight="bold",
+                )
 
             # Sumbu kembar untuk Line Chart (% Rasio PAD terhadap Pendapatan)
             ax2 = ax.twinx()
