@@ -65,18 +65,6 @@ selected_provinsi = st.sidebar.selectbox(
     "Pilih Provinsi", options=provinsi_list, index=0
 )
 
-# Filter Pemda berdasarkan Provinsi yang dipilih
-filtered_pemda_df = df[df[kolom_provinsi] == selected_provinsi]
-pemda_list = sorted(filtered_pemda_df[kolom_pemda].dropna().unique())
-selected_pemda = st.sidebar.selectbox(
-    "Pilih Nama Pemda / Kabupaten / Kota", options=pemda_list
-)
-
-options_pemda = ["🌐 Seluruh Wilayah (Agregat Provinsi)"] + pemda_list
-selected_pemda = st.selectbox(
-    "Pilih Nama Pemda / Kabupaten / Kota", options_pemda
-)
-
 # Logika penarikan data berdasarkan pilihan user
 st.sidebar.markdown("### 📌 Cakupan Analisis Wilayah")
 
