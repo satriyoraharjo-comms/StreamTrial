@@ -601,9 +601,6 @@ with col2:
                   ),
               )
 
-            ax.set_title(
-                "Tren & Rasio Terhadap Pendapatan Daerah", fontsize=10, pad=10
-            )
             ax.set_xlabel("")
 
             # Legenda di bawah grafik
