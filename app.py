@@ -466,8 +466,8 @@ with col1:
 
 with col2:
   st.markdown(
-      f"<div style='text-align: center;'><h5>📈 Peran PAD dalam Pendapatan Daerah"
-      f" normal;'>(Miliar Rp)</span></h5></div>",
+      f"<div style='text-align: center;'><h5>Peran PAD dalam Pendapatan Daerah"
+      f"<br>(Miliar Rp)</span></h5></div>",
       unsafe_allow_html=True,
   )
   try:
