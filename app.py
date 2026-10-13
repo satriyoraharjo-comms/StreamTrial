@@ -201,7 +201,7 @@ try:
       hierarchical_rows.append(r)
 
     subtotal_pajak_row = {
-        "Jenis / Objek PDRD (PAD)": "SUB TOTAL PAJAK DAERAH",
+        "Jenis / Objek PDRD (PAD)": "TOTAL PAJAK DAERAH",
         **pajak_data_sum.to_dict(),
     }
     hierarchical_rows.append(subtotal_pajak_row)
@@ -216,11 +216,6 @@ try:
     if "Retribusi Daerah" in grouped_raw.index.get_level_values(0):
       ret_sub = grouped_raw.loc["Retribusi Daerah"]
       retribusi_data_sum = ret_sub.sum(axis=0)
-
-      retribusi_rows.append(
-          {"Jenis / Objek PDRD (PAD)": "**Retribusi Daerah**", **retribusi_data_sum.to_dict()}
-      )
-      retribusi_style.append("header")
 
       for r_item in ret_sub.index:
         r_name = r_item[0] if isinstance(r_item, tuple) else r_item
@@ -238,7 +233,7 @@ try:
       style_metadata_full.append(sm)
 
     subtotal_ret_row = {
-        "Jenis / Objek PDRD (PAD)": "**SUB TOTAL RETRIBUSI DAERAH**",
+        "Jenis / Objek PDRD (PAD)": "TOTAL RETRIBUSI DAERAH",
         **retribusi_data_sum.to_dict(),
     }
     hierarchical_rows.append(subtotal_ret_row)
