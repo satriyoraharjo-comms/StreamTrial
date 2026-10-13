@@ -261,7 +261,7 @@ try:
                 "font-weight: bold; background-color: rgba(255, 255, 255,"
                 " 0.05); border-top: 1px solid #444;"
             )
-          elif st_type == "total_pad":
+          elif st_type == "total_pdrd":
             styles.append(
                 "font-weight: bold; background-color: rgba(0, 150, 255, 0.15);"
                 " border-top: 2px solid #00aaff; color: #00aaff;"
@@ -269,7 +269,7 @@ try:
           else:
             styles.append("font-weight: bold;")
         else:
-          if st_type in ["subtotal", "total_pad"]:
+          if st_type in ["subtotal", "total_pdrd"]:
             styles.append("font-weight: bold;")
           else:
             styles.append("")
