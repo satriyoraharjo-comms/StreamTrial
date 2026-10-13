@@ -376,20 +376,52 @@ with col1:
           )
       ]
 
-      if not df_pajak_saja.empty and kolom_objek in df_pajak_saja.columns:
-        pajak_summary = (
-            df_pajak_saja.groupby(kolom_objek)["sum"].sum().reset_index()
+      if not df_pajak_saja.empty:
+        df_chart = df_pajak_saja.copy()
+        
+        # Fungsi untuk meratakan PBJT menjadi satu kategori umum "PBJT"
+        def group_pbjt_category(row):
+          lv2 = str(row.get("Objek_Lv2", ""))
+          if "PBJT" in lv2 or "Pajak Barang" in lv2:
+            return "PBJT (Pajak Barang dan Jasa Tertentu)"
+          return lv2
+      
+        # Terapkan pengelompokan PBJT
+        df_chart["Objek_Grafik"] = df_chart.apply(
+            group_pbjt_category, axis=1
         )
+        
+        # Agregasi total nilai per objek pajak
+        pajak_summary = (
+            df_chart.groupby("Objek_Grafik")["sum"].sum().reset_index()
+        )
+        
+        # Hitung Total Keseluruhan Pajak Daerah untuk persentase
+        total_pajak_daerah = pajak_summary["sum"].sum()
+        
+        if total_pajak_daerah > 0:
+          # Hitung persentase kontribusi
+          pajak_summary["persentase"] = (
+              pajak_summary["sum"] / total_pajak_daerah
+          ) * 100
+        else:
+          pajak_summary["persentase"] = 0.0
+          
+        # Konversi nilai ke Miliar Rupiah untuk label batang
+        pajak_summary["sum_miliar"] = pajak_summary["sum"] / 1e9
+        
+        # Urutkan berdasarkan persentase tertinggi (Descending) dan ambil Top 5
         pajak_summary = pajak_summary.sort_values(
-            by="sum", ascending=False
+            by="persentase", ascending=False
         ).head(5)
 
         if not pajak_summary.empty:
           fig, ax = plt.subplots(figsize=(8, 4))
+          # Membuat grafik batang berdasarkan persentase
           sns.barplot(
               data=pajak_summary,
-              x=kolom_objek,
-              y="sum",
+              x="Objek_Grafik",
+              y="persentase",
               palette="Blues_r",
               ax=ax,
           )
@@ -400,15 +432,28 @@ with col1:
           ax.spines['right'].set_visible(False)
           
           for p in ax.patches:
+            height = p.get_height()
+            if height > 0:
+              # Mencari nilai Miliar yang sesuai dengan posisi batang saat ini
+              # Menggunakan indeks patch untuk mengambil data ringkasan
               ax.annotate(
-                  f"{p.get_height():.2f} M", # Format: 2 desimal + "M"
-                  (p.get_x() + p.get_width() / 2., p.get_height()),
-                  ha='center', va='center',
-                  xytext=(0, 7), # Jarak label ke atas batang
-                  textcoords='offset points',
-                  fontsize=9, color='#444' # Ukuran dan warna teks label
+                  f"{height:.1f}%",
+                  (p.get_x() + p.get_width() / 2.0, height),
+                  ha="center",
+                  va="center",
+                  xytext=(0, 7),
+                  textcoords="offset points",
+                  fontsize=9,
+                  color="#333",
+                  weight="bold",
               )
-          plt.xticks(rotation=30, ha="right")
+
+          ax.set_title(
+              f"Top 5 Struktur Pajak Daerah di {selected_pemda}"
+              " (% Kontribusi)"
+          )
+          ax.set_xlabel("Objek Pajak")
+          plt.xticks(rotation=20, ha="right", fontsize=9)
           st.pyplot(fig)
         else:
           st.info("Ringkasan data pajak kosong.")
