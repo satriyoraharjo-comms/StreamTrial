@@ -304,7 +304,6 @@ try:
 
     df_hierarki = pd.DataFrame(hierarchical_rows)
 
-
     def style_hierarchy(row):
       idx = row.name
       st_type = (
@@ -360,28 +359,39 @@ with col1:
   st.subheader("📊 Top 5 Komponen PAD")
   try:
     if not df_filtered.empty:
-      pajak_summary = (
-          df_filtered.groupby("standarobjekmap")["sum"].sum().reset_index()
-      )
-      pajak_summary = pajak_summary.sort_values(by="sum", ascending=False).head(
-          5
-      )
+      df_pajak_daerah = df_filtered[
+          (df_filtered["Objek_Lv1"] == "Pajak Daerah")
+            (df_filtered["standarjenismap"]
+             .astype(str)
+             .str.startswith("4101")
+        )
+      ]
+      
+      if not df_pajak_daerah.empty:
+        pajak_summary = (
+            df_pajak_daerah.groupby("standarobjekmap")["sum"]
+            .sum()
+            .reset_index()
+        )
+        pajak_summary = pajak_summary.sort_values(
+            by="sum", ascending=False
+        ).head(5)
 
-      fig, ax = plt.subplots(figsize=(8, 4))
-      sns.barplot(
-          data=pajak_summary,
-          x="standarobjekmap",
-          y="sum",
-          palette="Blues_r",
-          ax=ax,
-      )
-      ax.set_title(f"Top 5 Komponen di {selected_pemda}")
-      ax.set_xlabel("Objek Map")
-      ax.set_ylabel("Nilai (Rp)")
-      plt.xticks(rotation=30, ha="right")
-      st.pyplot(fig)
+        fig, ax = plt.subplots(figsize=(8, 4))
+        sns.barplot(
+            data=pajak_summary,
+            x="standarobjekmap",
+            y="sum",
+            palette="Blues_r",
+            ax=ax,
+        )
+        ax.set_title(f"Top 5 Komponen di {selected_pemda}")
+        ax.set_xlabel("Objek Map")
+        ax.set_ylabel("Nilai (Rp)")
+        plt.xticks(rotation=30, ha="right")
+        st.pyplot(fig)
     else:
-      st.info("Data PAD tidak tersedia.")
+        st.info("Data PAD tidak tersedia.")
   except Exception:
     st.info("Grafik komponen PAD belum dapat dirender.")
 
