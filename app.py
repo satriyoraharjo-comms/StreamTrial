@@ -464,155 +464,164 @@ with col1:
 
 with col2:
   st.markdown(
-      f"####### Peran PAD dalam Pendapatan Daerah (Miliar Rp)"
+      f"##### 📈 Peran PAD dalam Pendapatan Daerah ({selected_pemda})"
   )
   try:
-    if not df_filtered.empty:
-      # 1. Hitung Total PAD per Tahun (Komponen berawalan kode '41' atau Objek PAD)
-      df_pad = df_filtered[
-          df_filtered["standarjenismap"].astype(str).str.startswith("41")
-      ]
-      pad_per_tahun = (
-          df_pad.groupby("Tahun")["sum"].sum().reset_index(name="total_pad")
-      )
-      
-      # 2. Hitung Total Pendapatan Daerah keseluruhan per Tahun dari seluruh baris pemda terpilih
+    if not df.empty:
+      # Ambil data spesifik untuk Pemda dan Provinsi yang dipilih
       df_pemda_all = df[
-        (df[kolom_provinsi] == selected_provinsi)
-        & (df[kolom_pemda] == selected_pemda)
+          (df[kolom_provinsi] == selected_provinsi)
+          & (df[kolom_pemda] == selected_pemda)
       ]
-      
-      df_pendapatan = (
-        df_pemda_all.groupby("Tahun")["sum"]
-        .sum()
-        .reset_index(name="total_pendapatan")
-      )
-      
-      pendapatan_per_tahun = (
-          df_pendapatan.groupby("Tahun")["sum"]
-          .sum()
-          .reset_index(name="total_pendapatan")
-      )
 
-      # 3. Gabungkan data untuk menghitung persentase (% PAD terhadap Total Pendapatan)
-      combo_df = pd.merge(
-          pad_per_tahun, pendapatan_per_tahun, on="Tahun", how="left"
-      )
-      combo_df["sum_miliar"] = combo_df["total_pad"] / 1e9
+      if not df_pemda_all.empty:
+        # Deteksi otomatis nama kolom nilai numerik yang ada di dataframe
+        # (Mencari kolom seperti 'sum', 'Nilai', 'Realiasi', atau kolom numerik pertama)
+        possible_value_cols = ['sum', 'Nilai', 'Realisasi', 'Jumlah', 'value']
+        val_col = None
+        for c in possible_value_cols:
+          if c in df_pemda_all.columns:
+            val_col = c
+            break
+        
+        # Jika tidak ketemu di list, ambil kolom numerik pertama selain tahun
+        if not val_col:
+          numeric_cols = df_pemda_all.select_dtypes(include=['number']).columns
+          numeric_cols = [c for c in numeric_cols if c.lower() != 'tahun']
+          if numeric_cols:
+            val_col = numeric_cols[0]
 
-      # Menghitung persentase PAD terhadap Total Pendapatan Daerah secara akurat
-      combo_df["persen"] = (
-          combo_df["total_pad"] / combo_df["total_pendapatan"]
-      ) * 100
-      combo_df = combo_df.sort_values("Tahun")
-
-      if not combo_df.empty:
-        fig, ax = plt.subplots(figsize=(8, 4))
-
-        # 1. Plot Bar Chart (Total PAD dalam Miliar)
-        bars = ax.bar(
-            combo_df["Tahun"].astype(str),
-            combo_df["sum_miliar"],
-            color="#1b6ca8",
-            width=0.75,
-            label="TOTAL PAD",
-        )
-
-        # Sembunyikan sumbu Y bar untuk tampilan clean
-        ax.get_yaxis().set_visible(False)
-        ax.spines["left"].set_visible(False)
-        ax.spines["top"].set_visible(False)
-        ax.spines["right"].set_visible(False)
-
-        # Berikan batas atas sumbu Y agar ada ruang untuk label garis
-        ax.set_ylim(0, combo_df["sum_miliar"].max() * 1.4)
-
-        # Label angka di dalam/atas batang
-        for bar in bars:
-          yval = bar.get_height()
-          ax.annotate(
-              f"{yval:.2f}",
-              xy=(bar.get_x() + bar.get_width() / 2, 0),
-              xytext=(0, 8),  # offset 8 poin ke atas
-              textcoords="offset points",
-              ha="center",
-              va="bottom",
-              fontsize=9,
-              color="black",
-              weight="bold",
-              bbox=dict(
-                  boxstyle="round,pad=0.2",
-                  fc="black",
-                  ec="none",
-                  alpha=0.8,
-              ),
+        if not val_col:
+          st.error("Kolom nilai untuk perhitungan tidak ditemukan di dataset.")
+        else:
+          # 1. Total Pendapatan Keseluruhan per Tahun
+          df_pendapatan = (
+              df_pemda_all.groupby("Tahun")[val_col]
+              .sum()
+              .reset_index(name="total_pendapatan")
           )
 
-        # 2. Sumbu Kembar (Twin X) untuk Line Chart (% Persentase)
-        ax2 = ax.twinx()
-        ax2.get_yaxis().set_visible(False)
-        ax2.spines["top"].set_visible(False)
-        ax2.spines["right"].set_visible(False)
-        ax2.spines["left"].set_visible(False)
-        ax2.spines["bottom"].set_visible(False)
-        ax2.set_ylim(
-            0, max(combo_df["persen"].max() * 1.5, 30)
-        )
-
-        # Plot garis tren persentase
-        line = ax2.plot(
-            combo_df["Tahun"].astype(str),
-            combo_df["persen"],
-            color="#f26419",
-            linewidth=2.5,
-            marker="o",
-            markersize=5,
-            label="% PAD",
-        )
-
-        # Label angka di atas titik garis
-        for x, y in zip(
-            combo_df["Tahun"].astype(str), combo_df["persen"]
-        ):
-          ax2.annotate(
-              f"{y:.2f}%",
-              xy=(x, y),
-              xytext=(0, 12),
-              textcoords="offset points",
-              ha="center",
-              va="bottom",
-              fontsize=9,
-              color="#d9534f",
-              weight="bold",
-              bbox=dict(
-                  boxstyle="round,pad=0.2",
-                  fc="#fde8e4",
-                  ec="none",
-                  alpha=0.9,
-              ),
+          # 2. Total PAD per Tahun (Komponen berawalan kode '41')
+          df_pad_komponen = df_pemda_all[
+              df_pemda_all["standarjenismap"].astype(str).str.startswith("41")
+          ]
+          df_pad_tahunan = (
+              df_pad_komponen.groupby("Tahun")[val_col]
+              .sum()
+              .reset_index(name="total_pad")
           )
 
-        # Pengaturan Judul & Legenda di bawah grafik
-        ax.set_xlabel("")
+          # 3. Gabungkan data untuk Combo Chart
+          combo_df = pd.merge(
+              df_pad_tahunan, df_pendapatan, on="Tahun", how="left"
+          )
+          combo_df["sum_triliun"] = combo_df["total_pad"] / 1e12
 
-        # Menggabungkan legenda dari bar dan line chart di bawah
-        lines_1, labels_1 = ax.get_legend_handles_labels()
-        lines_2, labels_2 = ax2.get_legend_handles_labels()
-        ax.legend(
-            lines_1 + lines_2,
-            labels_1 + labels_2,
-            loc="upper center",
-            bbox_to_anchor=(0.5, -0.15),
-            ncol=2,
-            frameon=False,
-            fontsize=9,
-        )
+          # Menghitung persentase PAD terhadap Total Pendapatan Daerah
+          combo_df["persen"] = (
+              combo_df["total_pad"] / combo_df["total_pendapatan"]
+          ) * 100
+          combo_df = combo_df.sort_values("Tahun")
 
-        st.pyplot(fig)
+          if not combo_df.empty:
+            fig, ax = plt.subplots(figsize=(8, 4))
+
+            # Plot Bar Chart (Total PAD dalam Triliun)
+            bars = ax.bar(
+                combo_df["Tahun"].astype(str),
+                combo_df["sum_triliun"],
+                color="#1b6ca8",
+                width=0.5,
+                label="TOTAL PAD",
+            )
+
+            ax.get_yaxis().set_visible(False)
+            ax.spines["left"].set_visible(False)
+            ax.spines["top"].set_visible(False)
+            ax.spines["right"].set_visible(False)
+            ax.spines["bottom"].set_visible(False)
+            ax.set_ylim(0, combo_df["sum_triliun"].max() * 1.4)
+
+            # Label nilai nominal di dalam batang bagian bawah
+            for bar in bars:
+              yval = bar.get_height()
+              if yval > 0:
+                ax.annotate(
+                    f"{yval:.2f}",
+                    xy=(bar.get_x() + bar.get_width() / 2, 0),
+                    xytext=(0, 8),
+                    textcoords="offset points",
+                    ha="center",
+                    va="bottom",
+                    fontsize=9,
+                    color="white",
+                    weight="bold",
+                )
+
+            # Sumbu kembar untuk Line Chart (% Rasio PAD terhadap Pendapatan)
+            ax2 = ax.twinx()
+            ax2.get_yaxis().set_visible(False)
+            ax2.spines["top"].set_visible(False)
+            ax2.spines["right"].set_visible(False)
+            ax2.spines["left"].set_visible(False)
+            ax2.spines["bottom"].set_visible(False)
+            ax2.set_ylim(0, max(combo_df["persen"].max() * 1.5, 30))
+
+            line = ax2.plot(
+                combo_df["Tahun"].astype(str),
+                combo_df["persen"],
+                color="#f26419",
+                linewidth=2.5,
+                marker="o",
+                markersize=5,
+                label="% PAD",
+            )
+
+            # Label persentase di atas titik garis
+            for x, y in zip(combo_df["Tahun"].astype(str), combo_df["persen"]):
+              ax2.annotate(
+                  f"{y:.2f}%",
+                  xy=(x, y),
+                  xytext=(0, 12),
+                  textcoords="offset points",
+                  ha="center",
+                  va="bottom",
+                  fontsize=9,
+                  color="#d9534f",
+                  weight="bold",
+                  bbox=dict(
+                      boxstyle="round,pad=0.2",
+                      fc="#fde8e4",
+                      ec="none",
+                      alpha=0.9,
+                  ),
+              )
+
+            ax.set_title(
+                "Tren & Rasio Terhadap Pendapatan Daerah", fontsize=10, pad=10
+            )
+            ax.set_xlabel("")
+
+            # Legenda di bawah grafik
+            lines_1, labels_1 = ax.get_legend_handles_labels()
+            lines_2, labels_2 = ax2.get_legend_handles_labels()
+            ax.legend(
+                lines_1 + lines_2,
+                labels_1 + labels_2,
+                loc="upper center",
+                bbox_to_anchor=(0.5, -0.15),
+                ncol=2,
+                frameon=False,
+                fontsize=9,
+            )
+
+            st.pyplot(fig)
+          else:
+            st.info("Data tren PAD kosong.")
       else:
-        st.info("Data tren PAD kosong.")
+        st.info("Data wilayah tidak tersedia.")
     else:
-      st.info("Data wilayah tidak tersedia.")
+      st.info("Dataset utama kosong.")
   except Exception as e:
     st.error(f"Gagal merender Combo Chart: {str(e)}")
 
